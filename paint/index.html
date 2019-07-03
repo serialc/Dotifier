@@ -1,0 +1,239 @@
+<!doctype html>
+<html>
+ <head>
+  <meta charset="UTF-8">
+  <script src="svg.js"></script>
+  <link media="screen" type="text/css" href="css/reset.css" rel="stylesheet">
+  <link media="screen" type="text/css" href="css/dot.css" rel="stylesheet">
+  <title>DOTifier Lab</title>
+ </head>
+ <body>
+  <div id='container'>
+   <div id='header'>
+    DOTifier Lab
+   </div>
+   <div id='content'>
+    <p>DOTifier Lab allows you to create dotted or speckled designs. Using rectangles and circles to create zones of different dot colours you can create a vector design that will look sharp at all scales. See the examples below:
+    </p>
+    <div class='examples'>
+  	 <img src='examples/olympics.png'>
+	 <img src='examples/coca.png'>
+    </div>
+    <p>DOTifier Lab also allows pen-dotting. Click and drag your mouse across the canvas to paint dots for a great effect! See more examples below:</p>
+    <div class='examples'>
+  	 <img src='examples/flower.png'>
+	 <img src='examples/hotair.png'>
+	 <img src='examples/tree.png'>
+    </div>
+
+    <div id='dotifier'>
+    <h3>DOTifier</h3>
+    <div id='pnl1' class='panel'>
+     <h4>Canvas Size</h4>
+     <p><span>Width:</span> <input id='canvasw' type='text' maxlength='3' value='400' /></p>
+     <p><span>Height:</span> <input id='canvash' type='text' maxlength='3' value='250' /></p>
+    </div>
+
+    <div id='pnl2' class='panel'>
+     <h4>DOT Size</h4>
+     <p><span>Minimum:</span> <input id='dotmin' type='text' maxlength='3' value='1' /></p>
+     <p><span>Maximum:</span> <input id='dotmax' type='text' maxlength='3' value='8' /></p>
+     <p><span>Buffer:</span> <input id='dotbuf' type='text' maxlength='3' value='0' /></p>
+    </div>
+
+    <div id='pnl3' class='panel'>
+     <h4>Zone Dot Colours</h4>
+     <p>
+      <span id='zclr1'>Zone 1 Colours:</span>
+      <input id='z1c1' type='text' maxlength='6' value='06c' />
+      <a class='palicon' href='javascript:{}' onclick="openPalette('z1c1')"><img src='palicon.png'/></a>
+      <input id='z1c2' type='text' maxlength='6' value='049' />
+      <a class='palicon' href='javascript:{}' onclick="openPalette('z1c2')"><img src='palicon.png'/></a>
+      <input id='z1c3' type='text' maxlength='6' value='026' />
+      <a class='palicon' href='javascript:{}' onclick="openPalette('z1c3')"><img src='palicon.png'/></a>
+     </p>
+
+     <p>
+      <span id='zclr2'>Zone 2 Colours:</span>
+      <input id='z2c1' type='text' maxlength='6' value='6c0' />
+      <a class='palicon' href='javascript:{}' onclick="openPalette('z2c1')"><img src='palicon.png'/></a>
+      <input id='z2c2' type='text' maxlength='6' value='490' />
+      <a class='palicon' href='javascript:{}' onclick="openPalette('z2c2')"><img src='palicon.png'/></a>
+      <input id='z2c3' type='text' maxlength='6' value='260' />
+      <a class='palicon' href='javascript:{}' onclick="openPalette('z2c3')"><img src='palicon.png'/></a>
+     </p>
+
+     <p>
+      <span id='zclr3'>Zone 3 Colours:</span>
+      <input id='z3c1' type='text' maxlength='6' value='c06' />
+      <a class='palicon' href='javascript:{}' onclick="openPalette('z3c1')"><img src='palicon.png'/></a>
+      <input id='z3c2' type='text' maxlength='6' value='904' />
+      <a class='palicon' href='javascript:{}' onclick="openPalette('z3c2')"><img src='palicon.png'/></a>
+      <input id='z3c3' type='text' maxlength='6' value='602' />
+      <a class='palicon' href='javascript:{}' onclick="openPalette('z3c3')"><img src='palicon.png'/></a>
+     </p>
+    </div>
+
+    <div id='pnl5' class='panel'>
+     <div id='edit_zone_mode'>
+      <h4 class='l'>Edit Zone Shapes Mode <small>[<a href='javascript:{}' onclick="showDrawMode(true)">Draw Mode]</a>]</small></h4>
+      <p id='z1shpop'><strong>Zone 1</strong><br/>
+       Add shape:<br/>
+   	   <input type='radio' name='zone_shp' id='z1c'/>Circle<br/>
+       <input type='radio' name='zone_shp' id='z1r'/>Rectangle <a href='javascript:{}' onclick='makeBGRect()'>[fill]</a><br/>
+       Delete shape:<br/>
+       <select id='z1del'>
+		<option></option>
+        <option id='delall' value='-1'>Delete all</option>
+       </select>
+	  </p>
+
+      <p id='z2shpop'><strong>Zone 2</strong><br/>
+       Add shape:<br/>
+ 	   <input type='radio' name='zone_shp' id='z2c' checked />Circle<br/>
+	   <input type='radio' name='zone_shp' id='z2r'/>Rectangle<br/>
+       Delete shape:<br/>
+       <select id='z2del'>
+		<option></option>
+        <option id='delall' value='-1'>Delete all</option>
+       </select>
+      </p>
+
+      <p id='z3shpop'><strong>Zone 3</strong><br/>
+       Add shape:<br/>
+   	   <input type='radio' name='zone_shp' id='z3c'/>Circle<br/>
+       <input type='radio' name='zone_shp' id='z3r'/>Rectangle<br/>
+       Delete shape:<br/>
+       <select id='z3del'>
+		<option></option>
+        <option id='delall' value='-1'>Delete all</option>
+       </select>
+	  </p>
+     </div>
+
+     <div id='draw_mode'>
+      <h4 class='l'>Draw Mode <small>[<a href='javascript:{}' onclick="showDrawMode(false)">Edit Zone Shapes Mode</a>]</small></h4>
+      <p>Draw by clicking or dragging the mouse on the canvas</p>
+      <p><span>Brush Width:</span> <input id='brush_width' type='text' maxlength='3' value='1' /></p>
+      <p><span>Brush Lead in/out:</span> <input id='brush_leadio' type='text' maxlength='3' value='20' /></p>
+     </div>
+    </div>
+
+    <div id='pnl6' class='panel'>
+     <h4>Other Effects</h4>
+     <p>Hide Target Zones:<input id='toggle_targets' type='checkbox'/></p>
+     <p>Allow DOT Overlap:<input id='allow_overlap' type='checkbox'/></p>
+     <p>Delete DOTS:
+      <select id='deldots'>
+	   <option></option>
+       <option value='-1'>all</option>
+       <option value='z1'>Zone 1</option>
+       <option value='z2'>Zone 2</option>
+       <option value='z3'>Zone 3</option>
+	  </select>
+	 </p>
+     <p><span>Background:</span> <input id='bgcolour' type='text' maxlength='6' value='ffffff' />
+      <a class='palicon' href='javascript:{}' onclick="openPalette('bgcolour')"><img src='palicon.png'/></a>
+	 </p>
+    </div>
+
+    <div id='pnl4' class='panel'>
+     <h4>Run</h4>
+     <p>
+      <span class=''>Dots:</span>
+      <input id='dotnum' type='text' maxlength='6' size='6' value='500' />
+      <input type='submit' value='DOTify!' onclick="dotify(); return false;"/>
+      Process: <span id='dotifycomp'>Press 'DOTify' to start process.</span>
+     </p>
+    </div>
+
+    <div id='overlay_bg'>
+     <div id='overlay_palette'>
+      <p>Choose colour:</p>
+      <div id='svgpalPkg'>
+<svg id='svgpal' width="220" height="200" style='background: white;'>
+<defs>
+  <linearGradient id="bw-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" style="stop-color:rgb(255,255,255); stop-opacity:1"/>
+    <stop offset="50%" style="stop-color:rgb(255,255,255); stop-opacity:0"/>
+	<stop offset="100%" style="stop-color:rgb(0,0,0); stop-opacity:1"/>
+  </linearGradient>
+  <linearGradient id="black-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" style="stop-color:rgb(0,0,0); stop-opacity:1"/>
+    <stop offset="100%" style="stop-color:rgb(0,0,0); stop-opacity:0"/>
+  </linearGradient>
+  <linearGradient id="rainbow-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" style="stop-color:rgb(255,0,0); stop-opacity:1"/>
+    <stop offset="17%" style="stop-color:rgb(255,255,0); stop-opacity:1"/>
+    <stop offset="33%" style="stop-color:rgb(0,255,0); stop-opacity:1"/>
+    <stop offset="50%" style="stop-color:rgb(0,255,255); stop-opacity:1"/>
+    <stop offset="66%" style="stop-color:rgb(0,0,255); stop-opacity:1"/>
+    <stop offset="83%" style="stop-color:rgb(255,0,255); stop-opacity:1"/>
+    <stop offset="100%" style="stop-color:rgb(255,0,0); stop-opacity:1"/>
+  </linearGradient>
+</defs>
+  <rect x='0' y='0' width='200' height='200' style='fill:url(#rainbow-gradient)' />
+  <rect x='0' y='0' width='200' height='200' style='fill:url(#bw-gradient)' />
+  <rect x='200' y='0' width='21' height='200' style='fill:url(#black-gradient)' />
+</svg>
+      </div>
+     </div>
+    </div><!-- end of overlay_bg -->
+
+    <div id='svgPkg'>
+<svg id='svgobj' width="400" height="250" >
+  <style type="text/css">
+    /*start CSS*/
+    #z1, #z2, #z3 {stroke: none;fill: blue;}
+    #z1 {fill: #d99;}
+    #z2 {fill: #ff5;}
+    #z3 {fill: #339;}
+    /* end CSS */
+  </style>
+  <g id='bg_rect_g'>
+    <rect id='bg_rect' x='0' y='0' width='400' height='250' fill='white'/>
+  </g>
+  <g id='targetZone'>
+    <g id='z1'>
+      <rect x="32" y="55" width="323" height="133" />
+    </g>
+    <g id='z2'>
+      <circle cx="192" cy="126" r="116" />
+    </g>
+    <g id='z3'>
+      <rect x="168" y="26" width="50" height="201" />
+    </g>
+  </g>
+  <g id='circle_graphics'>
+    <g id='dotsz1'></g>
+    <g id='dotsz2'></g>
+    <g id='dotsz3'></g>
+  </g>
+</svg>
+    </div><!-- end of svgPkg div -->
+
+    <div id='pnl7'>
+     <h4>Export</h4>
+     <p>There are various options available to export the design you have created.</p>
+     <p>1. If you aren't concerned about the resolution simply take a screen shot.</p>
+     <p>2. If you know what you are doing you can copy the embedded SVG code directly yourself.</p>
+     <p>3. Alternatively you can click 'Export' below and the SVG code will be generated from your design for you. Simply copy and paste it in a text file then name the file 'mydesign.svg'. The SVG file can be opened by graphic editing software such as InkScape (free), Corel Draw, or Adobe Illustrator for editing or browsers for viewing.</p>
+     <p>Include Zone Shapes:<input id='exp_zones' type='checkbox'/></p>
+     <p>Include Background:<input id='exp_bg' type='checkbox' checked /></p>
+     <p>Export DOTs: <input type='submit' value='Export' onclick="dotExport(); return false;"/></p>
+     <p><textarea id='export_ta'>hi</textarea></p>
+    </div>
+    </div><!-- end of dotifier div -->
+
+   </div><!-- end of content -->
+   <div id='footer'>
+    <p><a href='javascript:{}' onclick="printCirclesData()">Print Circles Data</a></p>
+    <p><a href='javascript:{}' onclick="printShapeData()">Print Shape Data</a></p>
+    <pre><p id='outputParag'></p></pre>
+    <hr>
+    Cyrille M. 2010
+   </div>
+  </div><!-- end of container -->
+  <script src='dotify.js'></script>
+ </body>
+</html>
