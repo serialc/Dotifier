@@ -81,19 +81,19 @@
                     <a class='palicon' href='javascript:{}' onclick="openPalette('z3c3')"><img src='palicon.png'/></a>
                 </div>
 
-                <div class='col-12 mt-3'>
-                    <h3>Draw Mode</h3>
-                </div>
+                <div class='col-12 mt-3'></div>
 
-                <div id='edit_zone_mode' class='col-12'>
-                    <h4 class='l'>Edit Zone Shapes Mode <small>[<a href='javascript:{}' onclick="showDrawMode(true)">Draw Mode</a>]</small></h4>
+                <div id='edit_zone_mode' class='col-12' style="display: none">
                     <div class='row'>
+                        <div class='col-12'>
+                            <h4 class='l'>Edit Zone Shapes Mode <small>[<a href='javascript:{}' onclick="DOT.toggleMode('draw')">Draw Mode</a>]</small></h4>
+                        </div>
                         <div class='col-sm-4'>
                             <p id='z1shpop' class='p-2'>
                             <strong>Zone 1</strong><br/>
                             Add shape:<br/>
-                            <input type='radio' name='zone_shp' id='z1c'/><label for='z1c'>Circle</label><br/>
-                            <input type='radio' name='zone_shp' id='z1r'/><label for='zone_shp'>Rectangle</label> <a href='javascript:{}' onclick='makeBGRect()'>[fill]</a><br/>
+                            <input type='radio' name='zone_shp' id='z1c'/> <label for='z1c'>Circle</label><br/>
+                            <input type='radio' name='zone_shp' id='z1r'/> <label for='z1r'>Rectangle</label> <a href='javascript:{}' onclick='makeBGRect()'>[fill]</a><br/>
 
                             Delete shape:<br/>
                             <select id='z1del'>
@@ -106,8 +106,8 @@
                         <div class='col-sm-4'>
                             <p id='z2shpop' class='p-2'><strong>Zone 2</strong><br/>
                             Add shape:<br/>
-                            <input type='radio' name='zone_shp' id='z2c' checked />Circle<br/>
-                            <input type='radio' name='zone_shp' id='z2r'/>Rectangle<br/>
+                            <input type='radio' name='zone_shp' id='z2c' checked /> <label for='z2c'>Circle</label><br/>
+                                <input type='radio' name='zone_shp' id='z2r'/> <label for='z2r'>Rectangle</label><br/>
                             Delete shape:<br/>
                             <select id='z2del'>
                                 <option></option>
@@ -119,8 +119,8 @@
                         <div class='col-sm-4'>
                             <p id='z3shpop' class='p-2'><strong>Zone 3</strong><br/>
                             Add shape:<br/>
-                            <input type='radio' name='zone_shp' id='z3c'/>Circle<br/>
-                            <input type='radio' name='zone_shp' id='z3r'/>Rectangle<br/>
+                            <input type='radio' name='zone_shp' id='z3c'/> <label for='z3c'>Circle</label><br/>
+                    <input type='radio' name='zone_shp' id='z3r'/> <label for='z3r'>Rectangle</label><br/>
                             Delete shape:<br/>
                             <select id='z3del'>
                                 <option></option>
@@ -131,8 +131,8 @@
                     </div>
                 </div>
 
-                <div id='draw_mode' class='col-sm-6'>
-                    <h4 class='l'>Draw Mode <small>[<a href='javascript:{}' onclick="showDrawMode(false)">Edit Zone Shapes Mode</a>]</small></h4>
+                <div id='draw_mode' class='col-12'>
+                    <h4 class='l'>Draw Mode <small>[<a href='javascript:{}' onclick="DOT.toggleMode('shape')">Edit Zone Shapes Mode</a>]</small></h4>
                     <p>Draw by clicking or dragging the mouse on the canvas</p>
                     <p class='text-end'>Brush Width: <input id='brush_width' type='text' maxlength='3' value='1' /></p>
                     <p class='text-end'>Brush Lead in/out: <input id='brush_leadio' type='text' maxlength='3' value='20' /></p>
@@ -161,7 +161,7 @@
                     <p>
                     <span class=''>Dots:</span>
                     <input id='dotnum' type='text' maxlength='6' size='6' value='500' />
-                    <input type='submit' value='DOTify!' onclick="dotify(); return false;"/>
+                    <input type='submit' value='DOTify!' onclick="dotify(); return false;"/><br>
                     Process: <span id='dotifycomp'>Press 'DOTify' to start process.</span>
                     </p>
                 </div>

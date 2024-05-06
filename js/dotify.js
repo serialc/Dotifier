@@ -3,9 +3,9 @@
 // Feb 11, 2010.
 
 //Declare global variables
-var DOTIFY = {};
+var DOT = {};
 
-DOTIFY.constants = {
+DOT.constants = {
 	svgOffsetX: 0,
 	svgOffsetY: 0,
 	maxCanvasDim: 675,
@@ -27,7 +27,7 @@ DOTIFY.constants = {
 	svgNS: "http://www.w3.org/2000/svg"
 };
 
-DOTIFY.data = {
+DOT.data = {
 	count: 0,
 	circles: {},
 	colours: {},
@@ -55,15 +55,16 @@ appear = function(id) {
 };
 
 //determines visibility of draw_mode or edit_zone_mode
-showDrawMode = function(state) {
-	if(state) {
-		vanish('edit_zone_mode');
-		appear('draw_mode');
-		DOTIFY.constants.drawMode = true;
-	} else {
-		vanish('draw_mode');
-		appear('edit_zone_mode');
-		DOTIFY.constants.drawMode = false;
+DOT.toggleMode = function(mode) {
+	if(mode === 'draw') {
+        document.getElementById('edit_zone_mode').style.display = 'none';
+        document.getElementById('draw_mode').style.display = '';
+		DOT.constants.drawMode = true;
+	}
+    if(mode === 'shape') {
+        document.getElementById('draw_mode').style.display = 'none';
+        document.getElementById('edit_zone_mode').style.display = '';
+		DOT.constants.drawMode = false;
 	}
 };
 
@@ -82,9 +83,9 @@ toggleTargetVis = function(evt) {
 //changes constant regarding allowing overlap
 toggleOverlap = function(evt) {
 	if(this.checked) {
-		DOTIFY.constants.allowOverlap = true;
+		DOT.constants.allowOverlap = true;
 	} else {
-		DOTIFY.constants.allowOverlap = false;
+		DOT.constants.allowOverlap = false;
 	}
 };
 
@@ -93,8 +94,8 @@ printShapeData = function() {
 	var text = '';
 	var shp;
 
-	for(data in DOTIFY.data.shapes) {
-		shp = DOTIFY.data.shapes[data];
+	for(data in DOT.data.shapes) {
+		shp = DOT.data.shapes[data];
 		text += data + ' is type:' + shp.type + ' z:' + shp.z + ' x:' + shp.x + ' y:' + shp.y + ' w:' + shp.w + ' h:' + shp.h + ' r:' + shp.r + '\n';
 	}
 	print(text);
@@ -104,8 +105,8 @@ printShapeData = function() {
 printCirclesData = function() {
 	var text = '';
 	var i = 0;
-	for(data in DOTIFY.data.circles) {
-		text += i++ + ' is ' + DOTIFY.data.circles[data].cx + ':' + DOTIFY.data.circles[data].cy + ':' + DOTIFY.data.circles[data].cr + '; ';
+	for(data in DOT.data.circles) {
+		text += i++ + ' is ' + DOT.data.circles[data].cx + ':' + DOT.data.circles[data].cy + ':' + DOT.data.circles[data].cr + '; ';
 	}
 	print(text);
 };
@@ -119,12 +120,12 @@ calcDistance = function(x1, y1, x2, y2) {
 hitEdge = function(x, y, r) {
 
 	//if the edge of the circle is above or to the left of the canvas return true 
-	if( x-r < 0 + DOTIFY.constants.edgeBuffer || y-r < 0 + DOTIFY.constants.edgeBuffer ) {
+	if( x-r < 0 + DOT.constants.edgeBuffer || y-r < 0 + DOT.constants.edgeBuffer ) {
 		return true;
 	}
 	
 	//if the edge of the circle is below or to the right of the canvas return true
-	if( (x+r) > (DOTIFY.constants.canvasW - DOTIFY.constants.edgeBuffer) || (y+r) > (DOTIFY.constants.canvasH - DOTIFY.constants.edgeBuffer) ) {
+	if( (x+r) > (DOT.constants.canvasW - DOT.constants.edgeBuffer) || (y+r) > (DOT.constants.canvasH - DOT.constants.edgeBuffer) ) {
 		return true;
 	}
 	return false;
@@ -140,10 +141,10 @@ checkForCollision = function(x, y, r) {
 
 	var shp;
 	//see if dot is too close to another existing point
-	for(data in DOTIFY.data.circles) {
-		shp = DOTIFY.data.circles[data];
+	for(data in DOT.data.circles) {
+		shp = DOT.data.circles[data];
 		//if the new circle overlaps an older circle or the edge of the canvas return true
-		if(calcDistance(x, y, shp.cx, shp.cy) < (DOTIFY.constants.buffer + shp.cr + r)) {
+		if(calcDistance(x, y, shp.cx, shp.cy) < (DOT.constants.buffer + shp.cr + r)) {
 			return true;
 		}
 		//else continue checking the rest
@@ -155,19 +156,19 @@ checkForCollision = function(x, y, r) {
 createCircle = function(c_colour, c_size, c_locx, c_locy, zone) {
 
 	//if dot overlaps are not allowed check for collision
-	if(DOTIFY.constants.allowOverlap === false) {
+	if(DOT.constants.allowOverlap === false) {
 
 		//see if new proposed circle is too close to another existing circle - if yes skip creation of new circle
 		while(checkForCollision(c_locx, c_locy, c_size)) {
 			c_size = c_size - 0.5;
-			if(c_size < DOTIFY.constants.minSize) {
+			if(c_size < DOT.constants.minSize) {
 				return;
 			}
 		}
 	}
 	
 	//create circle element
-	var newCircle = document.createElementNS(DOTIFY.constants.svgNS, "circle");
+	var newCircle = document.createElementNS(DOT.constants.svgNS, "circle");
 
 	//set circle attributes
 	newCircle.setAttributeNS(null, 'cx', c_locx);
@@ -179,13 +180,13 @@ createCircle = function(c_colour, c_size, c_locx, c_locy, zone) {
 	document.getElementById('dots' + zone).appendChild(newCircle);
 
 	//Add circle 0bject to data set
-	DOTIFY.data.circles[DOTIFY.data.count] = {cx: c_locx, cy: c_locy, cr: c_size, z: zone, f: c_colour};
-	DOTIFY.data.count = DOTIFY.data.count + 1;
+	DOT.data.circles[DOT.data.count] = {cx: c_locx, cy: c_locy, cr: c_size, z: zone, f: c_colour};
+	DOT.data.count = DOT.data.count + 1;
 };
 
-//get a random float size determined by DOTIFY.constants.minSize and .circleSizes
+//get a random float size determined by DOT.constants.minSize and .circleSizes
 getRandCircleSize = function() {
-	return ((Math.random() * DOTIFY.constants.circleSizes) + DOTIFY.constants.minSize);
+	return ((Math.random() * DOT.constants.circleSizes) + DOT.constants.minSize);
 };
 
 //get a random integer
@@ -196,22 +197,22 @@ getRandInt = function(range) {
 //onclick of SVG canvas do this
 handle_SVG_Canvas_Click = function(evt, xshift, yshift) {
 	var targeted_zone = evt.target.parentNode.id;
-	var resolved_x = evt.clientX - DOTIFY.constants.svgOffsetX + window.pageXOffset + xshift;
-	var resolved_y = evt.clientY - DOTIFY.constants.svgOffsetY + window.pageYOffset + yshift;
+	var resolved_x = evt.clientX - DOT.constants.svgOffsetX + window.pageXOffset + xshift;
+	var resolved_y = evt.clientY - DOT.constants.svgOffsetY + window.pageYOffset + yshift;
 
 	var clr_style = getRandInt(3);
 
 	switch (targeted_zone) {
 		case 'z1':
-			clr_style = DOTIFY.data.colours['z1c' + clr_style];
+			clr_style = DOT.data.colours['z1c' + clr_style];
 		break;
 
 		case 'z2':
-			clr_style = DOTIFY.data.colours['z2c' + clr_style];
+			clr_style = DOT.data.colours['z2c' + clr_style];
 		break;
 
 		case 'z3':
-			clr_style = DOTIFY.data.colours['z3c' + clr_style];
+			clr_style = DOT.data.colours['z3c' + clr_style];
 		break;
 
 		case 'bg_rect_g':
@@ -413,7 +414,7 @@ openPalette = function(source) {
 			}
 
 			//add colour to global namespace data
-			DOTIFY.data.colours[source] = '#' + hex_colour;
+			DOT.data.colours[source] = '#' + hex_colour;
 
 		}, false);
 	}
@@ -462,7 +463,7 @@ updateHexInput = function(evt) {
 	}
 
 	//add to global namespace data
-	DOTIFY.data.colours[this.id] = '#' + clean;
+	DOT.data.colours[this.id] = '#' + clean;
 };
 
 //used to update globabl variables when users change input fields
@@ -479,57 +480,57 @@ updateInput = function(evt) {
 
 	switch(this.id) {
 		case 'canvasw':
-			if(clean > DOTIFY.constants.maxCanvasDim) {
-				clean = DOTIFY.constants.maxCanvasDim;
+			if(clean > DOT.constants.maxCanvasDim) {
+				clean = DOT.constants.maxCanvasDim;
 			}
-			DOTIFY.constants.canvasW = clean;
+			DOT.constants.canvasW = clean;
 			document.getElementById('svgobj').setAttributeNS(null, 'width', clean);
 			document.getElementById('bg_rect').setAttributeNS(null, 'width', clean);
 		break;
 		
 		case 'canvash':
-			if(clean > DOTIFY.constants.maxCanvasDim) {
-				clean = DOTIFY.constants.maxCanvasDim;
+			if(clean > DOT.constants.maxCanvasDim) {
+				clean = DOT.constants.maxCanvasDim;
 			}
-			DOTIFY.constants.canvasH = clean;
+			DOT.constants.canvasH = clean;
 			document.getElementById('svgobj').setAttributeNS(null, 'height', clean);
 			document.getElementById('bg_rect').setAttributeNS(null, 'height', clean);
 		break;
 
 		case 'dotmin':
-			DOTIFY.constants.minSize = clean;
-			if(clean > DOTIFY.constants.maxSize) {
+			DOT.constants.minSize = clean;
+			if(clean > DOT.constants.maxSize) {
 				document.getElementById('dotmax').value = clean;
-				DOTIFY.constants.maxSize = clean;
-				DOTIFY.constants.circleSizes = 0;
+				DOT.constants.maxSize = clean;
+				DOT.constants.circleSizes = 0;
 			}
 		break;
 
 		case 'dotmax':
 			//convert size max input into a range value (max - min)
-			if(clean < DOTIFY.constants.minSize) {
-				clean = DOTIFY.constants.minSize;
+			if(clean < DOT.constants.minSize) {
+				clean = DOT.constants.minSize;
 			}
 			
-			DOTIFY.constants.circleSizes = clean - DOTIFY.constants.minSize;
+			DOT.constants.circleSizes = clean - DOT.constants.minSize;
 		break;
 
 		case 'dotbuf':
-			DOTIFY.constants.buffer = clean;
+			DOT.constants.buffer = clean;
 		break;
 
 		case 'brush_width':
 			if(clean < 1) {
 				clean = 1;
 			}
-			DOTIFY.constants.brushWidth = clean;
+			DOT.constants.brushWidth = clean;
 		break;
 
 		case 'brush_leadio':
 			if(clean < 1) {
 				clean = 1;
 			}
-			DOTIFY.constants.brushLeadIO = clean;
+			DOT.constants.brushLeadIO = clean;
 		break;
 
 		default:
@@ -565,10 +566,10 @@ deleteZoneShapes = function(zone_del) {
 
 	//delete data from global data set
 	var sdel;
-	for( shp in DOTIFY.data.shapes ) {
-		sdel = DOTIFY.data.shapes[shp];
+	for( shp in DOT.data.shapes ) {
+		sdel = DOT.data.shapes[shp];
 		if(sdel.z === zone_del) {
-			delete DOTIFY.data.shapes[shp];
+			delete DOT.data.shapes[shp];
 		}
 	}
 };
@@ -617,7 +618,7 @@ deleteShape = function(evt) {
 
 		//remove element from global dataset
 		var shape_db_num = selection.id.slice(3);
-		delete DOTIFY.data.shapes[parseInt(shape_db_num,10)];
+		delete DOT.data.shapes[parseInt(shape_db_num,10)];
 	}
 
 	//select the blank field again
@@ -647,8 +648,8 @@ deleteDots = function(evt) {
 		}
 
 		//delete the DOTS from the dataset
-		for(dot in DOTIFY.data.circles) {
-			delete DOTIFY.data.circles[dot];
+		for(dot in DOT.data.circles) {
+			delete DOT.data.circles[dot];
 		}
 	} else {
 		//delete all the children in the zone
@@ -659,9 +660,9 @@ deleteDots = function(evt) {
 		}
 
 		//deletes DOTs from dataset
-		for(dot in DOTIFY.data.circles) {
-			if(DOTIFY.data.circles[dot].z === zone) {
-				delete DOTIFY.data.circles[dot];
+		for(dot in DOT.data.circles) {
+			if(DOT.data.circles[dot].z === zone) {
+				delete DOT.data.circles[dot];
 			}
 		}
 	}
@@ -673,7 +674,7 @@ deleteDots = function(evt) {
 dotBlast = function(evt, dots) {
 	var i, dist, xshift, yshift;
 	for( i = 0; i < dots; i++ ) {
-		dist = getRandInt(DOTIFY.constants.brushWidth*DOTIFY.constants.brushLeadValue / DOTIFY.constants.brushLeadIO);
+		dist = getRandInt(DOT.constants.brushWidth*DOT.constants.brushLeadValue / DOT.constants.brushLeadIO);
 		xshift = dist*Math.sin(Math.PI*2*i/dots);
 		yshift = dist*Math.cos(Math.PI*2*i/dots);
 		handle_SVG_Canvas_Click(evt, xshift, yshift);
@@ -682,7 +683,7 @@ dotBlast = function(evt, dots) {
 
 brushPaint = function(evt) {
 	//if brush width is 1 simply draw a point and return/exit function
-	if(DOTIFY.constants.brushWidth === 1) {
+	if(DOT.constants.brushWidth === 1) {
 		switch (evt.type) {
 			case 'click':
 			case 'mousemove':
@@ -690,7 +691,7 @@ brushPaint = function(evt) {
 			break;
 
 			case 'mouseup':
-				DOTIFY.constants.penMode = false;
+				DOT.constants.penMode = false;
 			break;
 		}
 		return;
@@ -700,51 +701,51 @@ brushPaint = function(evt) {
 
 	switch (evt.type) {
 		case 'click':
-			dots = DOTIFY.constants.brushWidth * DOTIFY.constants.brushDensity;
+			dots = DOT.constants.brushWidth * DOT.constants.brushDensity;
 			dotBlast(evt, dots);
 		break;
 
 		case 'mousemove':
 			//draw the brush width based on length of stroke (lead in and out)
-			switch (DOTIFY.constants.brushLeadStatus) {
+			switch (DOT.constants.brushLeadStatus) {
 				case 0:
-					DOTIFY.constants.brushLeadStatus = 1;
-					DOTIFY.constants.brushLeadValue = 0;
+					DOT.constants.brushLeadStatus = 1;
+					DOT.constants.brushLeadValue = 0;
 				break;
 
 				case 1:
 					//calculate the number of dots based on proportion of leadin complete
-					dots = (DOTIFY.constants.brushWidth*DOTIFY.constants.brushLeadValue / DOTIFY.constants.brushLeadIO) * DOTIFY.constants.brushDensity;
+					dots = (DOT.constants.brushWidth*DOT.constants.brushLeadValue / DOT.constants.brushLeadIO) * DOT.constants.brushDensity;
 
 					//draw all the dots
 					dotBlast(evt, dots);
 
 					//grow the brush size incrementally - when maxed go to next stage
-					if(DOTIFY.constants.brushLeadIO > DOTIFY.constants.brushLeadValue) {
-						DOTIFY.constants.brushLeadValue++;
+					if(DOT.constants.brushLeadIO > DOT.constants.brushLeadValue) {
+						DOT.constants.brushLeadValue++;
 					} else {
-						DOTIFY.constants.brushLeadStatus = 2;
+						DOT.constants.brushLeadStatus = 2;
 					}
 				break;
 
 				case 2:
-					dots =  DOTIFY.constants.brushWidth * DOTIFY.constants.brushDensity;
+					dots =  DOT.constants.brushWidth * DOT.constants.brushDensity;
 					dotBlast(evt, dots);
 				break;
 
 				case 3:
 					//calculate the number of dots based on proportion of lead out complete
-					dots = (DOTIFY.constants.brushWidth*DOTIFY.constants.brushLeadValue / DOTIFY.constants.brushLeadIO) * DOTIFY.constants.brushDensity;
+					dots = (DOT.constants.brushWidth*DOT.constants.brushLeadValue / DOT.constants.brushLeadIO) * DOT.constants.brushDensity;
 					
 					//draw all the dots
 					dotBlast(evt, dots);
 
 					//shrink the brush size incrementally = when 0 go to stage 0
-					if(DOTIFY.constants.brushLeadValue > 1) {
-						DOTIFY.constants.brushLeadValue--;
+					if(DOT.constants.brushLeadValue > 1) {
+						DOT.constants.brushLeadValue--;
 					} else {
-						DOTIFY.constants.brushLeadStatus = 0;
-						DOTIFY.constants.penMode = false;
+						DOT.constants.brushLeadStatus = 0;
+						DOT.constants.penMode = false;
 					}
 				break;
 					
@@ -754,7 +755,7 @@ brushPaint = function(evt) {
 		break;
 
 		case 'mouseup':
-			DOTIFY.constants.brushLeadStatus = 3;
+			DOT.constants.brushLeadStatus = 3;
 		break;
 
 		default:
@@ -771,28 +772,28 @@ setPenMode = function(evt) {
 	//if in drawMode and shift key pressed draw circles as mouse moves
 	//if in edit zone mode (drawMode === false) then allow the creation of new shapes.
 
-	if(DOTIFY.constants.drawMode === true) {
+	if(DOT.constants.drawMode === true) {
 		var key;
 
 		switch (evt.type) {
 			case 'click':
-				if(DOTIFY.constants.penMode === false) {
+				if(DOT.constants.penMode === false) {
 					brushPaint(evt);
 				}
 			break;
 
 			case 'mousemove':
-				if(DOTIFY.constants.penMode === true) {
+				if(DOT.constants.penMode === true) {
 					brushPaint(evt);
 				}
 			break;
 
 			case 'mousedown':
-				DOTIFY.constants.penMode = true;
+				DOT.constants.penMode = true;
 			break;
 
 			case 'mouseup':
-				if(DOTIFY.constants.penMode === true) {
+				if(DOT.constants.penMode === true) {
 					brushPaint(evt);
 				}
 			break;
@@ -800,14 +801,14 @@ setPenMode = function(evt) {
 			case 'keydown':
 				key = evt.charCode || evt.keyCode;
 				if(key === 16) {//'shift' key
-					DOTIFY.constants.penMode = true;
+					DOT.constants.penMode = true;
 				}
 			break;
 
 			case 'keyup':
 				key = evt.charCode || evt.keyCode;
 				if(key === 16) {
-					DOTIFY.constants.penMode = false;
+					DOT.constants.penMode = false;
 				}
 			break;
 		}
@@ -820,7 +821,7 @@ handleZoneEdit = function(evt) {
 	evt.preventDefault();
 
 	//if in edit zone mode (drawMode === false) than allow the creation of new shapes.
-	if(DOTIFY.constants.drawMode === false) {
+	if(DOT.constants.drawMode === false) {
 
 		var new_shape;
 
@@ -833,9 +834,9 @@ handleZoneEdit = function(evt) {
 				}
 
 				//catch the X,Y mouse location
-				DOTIFY.constants.shapeCreation = {};
-				DOTIFY.constants.shapeCreation.xOrig = evt.clientX - DOTIFY.constants.svgOffsetX + window.pageXOffset;
-				DOTIFY.constants.shapeCreation.yOrig = evt.clientY - DOTIFY.constants.svgOffsetY + window.pageYOffset;
+				DOT.constants.shapeCreation = {};
+				DOT.constants.shapeCreation.xOrig = evt.clientX - DOT.constants.svgOffsetX + window.pageXOffset;
+				DOT.constants.shapeCreation.yOrig = evt.clientY - DOT.constants.svgOffsetY + window.pageYOffset;
 
 				var i, zone_t, shp_t;
 				//check the six radio buttons and see which one is checked
@@ -844,18 +845,18 @@ handleZoneEdit = function(evt) {
 						
 						shp_t = 'c';
 						zone_t = i;
-						new_shape = document.createElementNS(DOTIFY.constants.svgNS, "circle");
-						new_shape.setAttributeNS(null, 'cx', DOTIFY.constants.shapeCreation.xOrig);
-						new_shape.setAttributeNS(null, 'cy', DOTIFY.constants.shapeCreation.yOrig);
+						new_shape = document.createElementNS(DOT.constants.svgNS, "circle");
+						new_shape.setAttributeNS(null, 'cx', DOT.constants.shapeCreation.xOrig);
+						new_shape.setAttributeNS(null, 'cy', DOT.constants.shapeCreation.yOrig);
 						new_shape.setAttributeNS(null, 'r', 10);
 
 					} else if(document.getElementById('z' + i + 'r').checked === true) {
 					
 						shp_t = 'r';
 						zone_t = i;
-						new_shape = document.createElementNS(DOTIFY.constants.svgNS, "rect");
-						new_shape.setAttributeNS(null, 'x', DOTIFY.constants.shapeCreation.xOrig);
-						new_shape.setAttributeNS(null, 'y', DOTIFY.constants.shapeCreation.yOrig);
+						new_shape = document.createElementNS(DOT.constants.svgNS, "rect");
+						new_shape.setAttributeNS(null, 'x', DOT.constants.shapeCreation.xOrig);
+						new_shape.setAttributeNS(null, 'y', DOT.constants.shapeCreation.yOrig);
 						new_shape.setAttributeNS(null, 'width', 10);
 						new_shape.setAttributeNS(null, 'height', 10);
 					}
@@ -865,8 +866,8 @@ handleZoneEdit = function(evt) {
 				new_shape.setAttributeNS(null, 'fill', 'none');
 				new_shape.setAttributeNS(null, 'id', 'new_shape_temp');
 				
-				DOTIFY.constants.shapeCreation.type = shp_t;
-				DOTIFY.constants.shapeCreation.zone = zone_t;
+				DOT.constants.shapeCreation.type = shp_t;
+				DOT.constants.shapeCreation.zone = zone_t;
 
 				//Add shape to svg canvas
 				document.getElementById('svgobj').appendChild(new_shape);
@@ -875,32 +876,32 @@ handleZoneEdit = function(evt) {
 			case 'mousemove':
 				//if actively creating shape
 
-				if(DOTIFY.constants.shapeCreation) {
+				if(DOT.constants.shapeCreation) {
 					//resize shape
 					//get new mouse coordinates
-					var nx = evt.clientX - DOTIFY.constants.svgOffsetX + window.pageXOffset;
-					var ny = evt.clientY - DOTIFY.constants.svgOffsetY + window.pageYOffset;
+					var nx = evt.clientX - DOT.constants.svgOffsetX + window.pageXOffset;
+					var ny = evt.clientY - DOT.constants.svgOffsetY + window.pageYOffset;
 
 					new_shape = document.getElementById('new_shape_temp');
 
-					if(DOTIFY.constants.shapeCreation.type === 'c') {
+					if(DOT.constants.shapeCreation.type === 'c') {
 						//Circle Radius Edit
-						new_shape.setAttributeNS(null,'r', parseInt(calcDistance(nx, ny, DOTIFY.constants.shapeCreation.xOrig, DOTIFY.constants.shapeCreation.yOrig),10));
+						new_shape.setAttributeNS(null,'r', parseInt(calcDistance(nx, ny, DOT.constants.shapeCreation.xOrig, DOT.constants.shapeCreation.yOrig),10));
 					} else {
 						//Rectangle Shape Edit
 						//depending on mouse location change x,y and width/height or only width/height.
-						if(nx < DOTIFY.constants.shapeCreation.xOrig) {
-							new_shape.setAttributeNS(null,'width', DOTIFY.constants.shapeCreation.xOrig - nx);
+						if(nx < DOT.constants.shapeCreation.xOrig) {
+							new_shape.setAttributeNS(null,'width', DOT.constants.shapeCreation.xOrig - nx);
 							new_shape.setAttributeNS(null,'x', nx);
 						} else {
-							new_shape.setAttributeNS(null,'width', nx - DOTIFY.constants.shapeCreation.xOrig);
+							new_shape.setAttributeNS(null,'width', nx - DOT.constants.shapeCreation.xOrig);
 						}
 
-						if(ny < DOTIFY.constants.shapeCreation.yOrig) {
-							new_shape.setAttributeNS(null,'height', DOTIFY.constants.shapeCreation.yOrig - ny);
+						if(ny < DOT.constants.shapeCreation.yOrig) {
+							new_shape.setAttributeNS(null,'height', DOT.constants.shapeCreation.yOrig - ny);
 							new_shape.setAttributeNS(null,'y', ny);
 						} else {
-							new_shape.setAttributeNS(null,'height', ny - DOTIFY.constants.shapeCreation.yOrig);
+							new_shape.setAttributeNS(null,'height', ny - DOT.constants.shapeCreation.yOrig);
 						}
 					}
 				}
@@ -909,7 +910,7 @@ handleZoneEdit = function(evt) {
 			case 'mouseup':
 			case 'click': //equivalent to up
 			default:
-				if(DOTIFY.constants.shapeCreation) {
+				if(DOT.constants.shapeCreation) {
 
 					//move to correct target zone and format correctly
 					new_shape = document.getElementById('new_shape_temp');
@@ -919,7 +920,7 @@ handleZoneEdit = function(evt) {
 					new_shape.setAttributeNS(null, 'id', '');
 					
 					//put the shape in its home in the correct zone graphic element
-					document.getElementById('z' + DOTIFY.constants.shapeCreation.zone).appendChild(new_shape);
+					document.getElementById('z' + DOT.constants.shapeCreation.zone).appendChild(new_shape);
 
 					//adds new shape to DB
 					getZoneShapes();
@@ -933,7 +934,7 @@ handleZoneEdit = function(evt) {
 					setShapeForm();
 
 					//delete data
-					delete DOTIFY.constants.shapeCreation;
+					delete DOT.constants.shapeCreation;
 
 				}
 			break;
@@ -1070,15 +1071,15 @@ getCanvasProperties = function() {
 	var loc = findObj(svg_container);
 
 	//assign locations to global variable
-	DOTIFY.constants.svgOffsetX = parseInt(loc[0], 10);
-	DOTIFY.constants.svgOffsetY = parseInt(loc[1], 10);
+	DOT.constants.svgOffsetX = parseInt(loc[0], 10);
+	DOT.constants.svgOffsetY = parseInt(loc[1], 10);
 
 	//actual SVG element properties
 	var svg_elem = document.getElementById('svgobj');
 
 	//get the SVG canvas size
-	DOTIFY.constants.canvasW = parseInt(svg_elem.getAttributeNS(null, 'width'), 10);
-	DOTIFY.constants.canvasH = parseInt(svg_elem.getAttributeNS(null, 'height'), 10);
+	DOT.constants.canvasW = parseInt(svg_elem.getAttributeNS(null, 'width'), 10);
+	DOT.constants.canvasH = parseInt(svg_elem.getAttributeNS(null, 'height'), 10);
 
 	//get the default zone colours from inputs
 	var i, j, clr_id;
@@ -1093,7 +1094,7 @@ getCanvasProperties = function() {
 			clr_elem = document.getElementById(clr_id);
 
 			//put value in data set
-			DOTIFY.data.colours[clr_id] = '#' + clr_elem.value;
+			DOT.data.colours[clr_id] = '#' + clr_elem.value;
 
 			//update border of input according to value
 			clr_elem.style.border = 'solid 3px #' + clr_elem.value;
@@ -1105,17 +1106,17 @@ getCanvasProperties = function() {
 getFormDefaults = function() {
 	//get min circle size value
 	var min = parseInt(document.getElementById('dotmin').value, 10);
-	DOTIFY.constants.minSize = min;
+	DOT.constants.minSize = min;
 	
 	//get circle range value
-	DOTIFY.constants.circleSizes = parseInt(document.getElementById('dotmax').value - min, 10);
+	DOT.constants.circleSizes = parseInt(document.getElementById('dotmax').value - min, 10);
 
 	//get buffer value
-	DOTIFY.constants.buffer = parseInt(document.getElementById('dotbuf').value, 10);
+	DOT.constants.buffer = parseInt(document.getElementById('dotbuf').value, 10);
 
 	//get the brush width and lead in/out
-	DOTIFY.constants.brushWidth = parseInt(document.getElementById('brush_width').value, 10);
-	DOTIFY.constants.brushLeadIO = parseInt(document.getElementById('brush_leadio').value, 10);
+	DOT.constants.brushWidth = parseInt(document.getElementById('brush_width').value, 10);
+	DOT.constants.brushLeadIO = parseInt(document.getElementById('brush_leadio').value, 10);
 };
 
 //reads shape data and adds elements to shape removal form
@@ -1124,8 +1125,8 @@ setShapeForm = function() {
 	var form_del;
 	var new_option;
 
-	for(shp in DOTIFY.data.shapes) {
-		shape = DOTIFY.data.shapes[shp];
+	for(shp in DOT.data.shapes) {
+		shape = DOT.data.shapes[shp];
 		form_del = document.getElementById(shape.z + 'del');
 		new_option = document.createElement('option');
 		new_option.value = shp;
@@ -1142,28 +1143,28 @@ setShapeForm = function() {
 //creates a background rect for zone 1
 makeBGRect = function() {
 	//create SVG shape and add to zone1
-	new_shape = document.createElementNS(DOTIFY.constants.svgNS, "rect");
+	new_shape = document.createElementNS(DOT.constants.svgNS, "rect");
 	new_shape.setAttributeNS(null, 'x', 0);
 	new_shape.setAttributeNS(null, 'y', 0);
-	new_shape.setAttributeNS(null, 'width', DOTIFY.constants.canvasW);
-	new_shape.setAttributeNS(null, 'height', DOTIFY.constants.canvasH);
+	new_shape.setAttributeNS(null, 'width', DOT.constants.canvasW);
+	new_shape.setAttributeNS(null, 'height', DOT.constants.canvasH);
 	new_shape.setAttributeNS(null, 'dot', 'x');
-	new_shape.setAttributeNS(null, 'id', 'shp_z1r' + DOTIFY.data.shp_count);
+	new_shape.setAttributeNS(null, 'id', 'shp_z1r' + DOT.data.shp_count);
 				
 	//Add rect to svg canvas
 	document.getElementById('z1').appendChild(new_shape);
 
-	//add data to DOTIFY.data.shapes
-	DOTIFY.data.shapes[DOTIFY.data.shp_count] = {
+	//add data to DOT.data.shapes
+	DOT.data.shapes[DOT.data.shp_count] = {
 		z: 'z1',
 		type: 'r',
 		x: 0,
 		y: 0,
-		w: DOTIFY.constants.canvasW,
-		h: DOTIFY.constants.canvasH
+		w: DOT.constants.canvasW,
+		h: DOT.constants.canvasH
 	};
 
-	DOTIFY.data.shp_count++;
+	DOT.data.shp_count++;
 
 	//deletes all the shapes from the deletion list
 	deleteZoneOptionTags('z1');
@@ -1174,7 +1175,7 @@ makeBGRect = function() {
 	setShapeForm();
 };
 
-//parse SVG and add shapes to DOTIFY.data.shapes data set
+//parse SVG and add shapes to DOT.data.shapes data set
 getZoneShapes = function() {
 	//get the 'g' element holding the shapes for each zone
 	var svg_z = {
@@ -1197,12 +1198,12 @@ getZoneShapes = function() {
 			//shape holds the actually SVG shape
 			shape = svg_z[zone].childNodes[i];
 			
-			//copy info from SVG shape into DOTIFY data set
+			//copy info from SVG shape into DOT data set
 			if(shape.getAttributeNS(null,'dot') === 'x') {
 				// DO NOTHING - shape already recorded
 			} else if(shape.nodeName === 'rect') {
 				//RECTANGLE
-				DOTIFY.data.shapes[DOTIFY.data.shp_count] = {
+				DOT.data.shapes[DOT.data.shp_count] = {
 					z: svg_z[zone].id,
 					type: 'r',
 					x: parseInt(shape.getAttributeNS(null,'x'),10),
@@ -1212,10 +1213,10 @@ getZoneShapes = function() {
 				};
 
 				shape.setAttributeNS(null,'dot','x');
-				DOTIFY.data.shp_count = DOTIFY.data.shp_count + 1;
+				DOT.data.shp_count = DOT.data.shp_count + 1;
 			} else if (shape.nodeName === 'circle') {
 				//CIRCLE
-				DOTIFY.data.shapes[DOTIFY.data.shp_count] = {
+				DOT.data.shapes[DOT.data.shp_count] = {
 					z: svg_z[zone].id,
 					type: 'c',
 					x: parseInt(shape.getAttributeNS(null,'cx'),10),
@@ -1224,14 +1225,14 @@ getZoneShapes = function() {
 				};
 
 				shape.setAttributeNS(null,'dot','x');
-				DOTIFY.data.shp_count = DOTIFY.data.shp_count + 1;
+				DOT.data.shp_count = DOT.data.shp_count + 1;
 			} else {
 				alert('ERROR: a shape object of unexpected form was encountered in your SVG graphic!');
 			}
 
 			//if the SVG shape doesn't have an id already - give it one!
 			if(!shape.id) {
-				shape.id = 'shp_' + zone + '' + DOTIFY.data.shapes[DOTIFY.data.shp_count-1].type + '' + (DOTIFY.data.shp_count - 1);
+				shape.id = 'shp_' + zone + '' + DOT.data.shapes[DOT.data.shp_count-1].type + '' + (DOT.data.shp_count - 1);
 			}
 		}
 	}
@@ -1243,11 +1244,11 @@ zoneCollision = function(x, y) {
 	var dshp;
 	zone_hits = { z1: 0, z2: 0, z3: 0 };
 
-	//go through each shape in DOTIFY.data.shapes
-	for(shape in DOTIFY.data.shapes) {
+	//go through each shape in DOT.data.shapes
+	for(shape in DOT.data.shapes) {
 
 		//shape object dshp
-		dshp = DOTIFY.data.shapes[shape];
+		dshp = DOT.data.shapes[shape];
 
 		if(dshp.type === 'r') {
 			if(x > dshp.x && x < (dshp.x + dshp.w) && y > dshp.y && y < (dshp.y + dshp.h)) {
@@ -1299,8 +1300,8 @@ dotify = function() {
 	//this will be called by setTimeout
 	var dotit = function () {
 		//get random location
-		var x = getRandInt(DOTIFY.constants.canvasW);
-		var y = getRandInt(DOTIFY.constants.canvasH);
+		var x = getRandInt(DOT.constants.canvasW);
+		var y = getRandInt(DOT.constants.canvasH);
 
 		//check which zone the coordinates fall starting at the highest, zone3, to zone1, the lowest.
 		zone_hit = zoneCollision(x, y);
@@ -1310,7 +1311,7 @@ dotify = function() {
 			//do not draw circle
 		} else {
 			//hook into same function as mouse click
-			createCircle(DOTIFY.data.colours[zone_hit + 'c' + getRandInt(3)], getRandCircleSize(), x, y, zone_hit);
+			createCircle(DOT.data.colours[zone_hit + 'c' + getRandInt(3)], getRandCircleSize(), x, y, zone_hit);
 			compltn_elem.innerHTML = parseInt((i/cycles)*100,10) + '%';
 		}
 
@@ -1334,11 +1335,11 @@ dotExport = function() {
 	tarea.style.display = 'block';
 	var newtext, shp;
 
-	newtext = "<svg xmlns='http://www.w3.org/2000/svg' width='" + DOTIFY.constants.canvasW + "' height='" + DOTIFY.constants.canvasH + "' >\n";
+	newtext = "<svg xmlns='http://www.w3.org/2000/svg' width='" + DOT.constants.canvasW + "' height='" + DOT.constants.canvasH + "' >\n";
 	
 	//print out the background
 	if(document.getElementById('exp_bg').checked === true) {
-		newtext += "<rect x='0' y='0' width='" + DOTIFY.constants.canvasW + "' height='" + DOTIFY.constants.canvasH + "' fill='" + document.getElementById('bg_rect').getAttributeNS(null,'fill') + "' />\n";
+		newtext += "<rect x='0' y='0' width='" + DOT.constants.canvasW + "' height='" + DOT.constants.canvasH + "' fill='" + document.getElementById('bg_rect').getAttributeNS(null,'fill') + "' />\n";
 	}
 
 	//if the checkbox is checked add zone shapes as well
@@ -1353,8 +1354,8 @@ dotExport = function() {
 		for( i = 1; i < 4; i++ ) {
 			newtext += "<g id='z" + i + "'>\n";
 			//for each object in the zone
-			for(count in DOTIFY.data.shapes) {
-				shp = DOTIFY.data.shapes[count];
+			for(count in DOT.data.shapes) {
+				shp = DOT.data.shapes[count];
 				//rect or circle?
 				if(shp.z === 'z' + i) {
 					if(shp.type === 'r') {
@@ -1374,8 +1375,8 @@ dotExport = function() {
 	newtext += "<g id='dots'>\n";
 
 	//for each dot
-	for(count in DOTIFY.data.circles) {
-		shp = DOTIFY.data.circles[count];
+	for(count in DOT.data.circles) {
+		shp = DOT.data.circles[count];
 		//circle
 		newtext += "<circle cx='" + shp.cx + "' cy='" + shp.cy + "' r='" + shp.cr + "' fill='" + shp.f + "' />\n";
 	}
@@ -1405,7 +1406,7 @@ window.onload = function() {
 	//add event listeners to SVG objects and input elements
 	setEventListeners();
 
-	//add existing SVG shapes to dataset for editing and automated DOTIFY
+	//add existing SVG shapes to dataset for editing and automated DOT
 	getZoneShapes();
 
 	//add Existing SVG zone shapes to form
