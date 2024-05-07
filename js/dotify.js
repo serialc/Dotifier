@@ -226,10 +226,14 @@ prepColours = function(colour) {
     return colour.R + '' + colour.G + '' + colour.B;
 };
 
-getLocationRGB = function(x, y) {
-    var hex_colour = '';
-    var sec_size = 200/6;
-    var sec_colour = parseInt(y/sec_size,10);
+DOT.getLocationRGB = function(x, y) {
+    let hex_colour = '';
+    let palspan = 200;
+    let sec_size = palspan / 6;
+    let sec_colour = parseInt( y / sec_size, 10);
+
+    console.log('colsec', sec_colour);
+    console.log('xy',x,y);
 
     //hold a 0 to 255 value
     var w_val = 0;
@@ -242,24 +246,26 @@ getLocationRGB = function(x, y) {
         B: 0
     };
 
-    //clicked on main palette
-    if(x < 201) {
-        //determine black / white of colour
-        if(x > 100) {
+    // clicked on main palette
+    if(x < palspan) {
+        // determine black / white of colour
+        if(x > (palspan / 2)) {
             // 100 < x < 201
-            b_val = parseInt((x-100)*255/100,10);
+            b_val = parseInt((x-palspan/2)*255/(palspan/2), 10);
         } else {
             // x < 101
-            w_val = parseInt((100-x)*255/100,10);
+            w_val = parseInt((palspan/2-x)*255/(palspan/2), 10);
         }
 
-        //based on section get y, convert to 0-255 range value
-        hue = (y-(sec_size*sec_colour))*255/sec_size;
+        console.log('bwvals', b_val, w_val);
+        // based on section, get y, convert to 0-255 range value
+        let hue = (y - (sec_size * sec_colour)) / sec_size * 255;
+        console.log('hue', hue);
 
-        c_val.c_none = 0+w_val;
-        c_val.c_vary_inc = (hue)+(w_val*(1 - hue/255))-(b_val*(hue/255));
-        c_val.c_vary_dec = (255-hue)+(w_val*(hue/255))-(b_val*(1 - hue/255));
-        c_val.c_full = 255-b_val;
+        c_val.c_none     = 0 + w_val;
+        c_val.c_vary_inc = (hue) + (w_val*(1 - hue/255)) - (b_val*(hue/255));
+        c_val.c_vary_dec = (255-hue) + (w_val*(hue/255)) - (b_val*(1 - hue/255));
+        c_val.c_full     = 255 - b_val;
 
         switch(sec_colour) {
             case 0:
@@ -310,9 +316,9 @@ getLocationRGB = function(x, y) {
         //assemble colour 0-255 values to hex colour code
         hex_colour = prepColours(colour);
 
-    } else {	//clicked on greyscale palette
-        //x is 201 to 220
-        hex_colour = parseInt(y*255/200,10).toString(16);
+    } else {
+        // clicked on greyscale palette
+        hex_colour = parseInt( y * 255 / palspan, 10).toString(16);
         if(hex_colour.length === 1) {
             hex_colour = '0' + hex_colour;
         }
@@ -322,7 +328,7 @@ getLocationRGB = function(x, y) {
     return hex_colour;
 };
 
-openPalette = function(source) {
+DOT.openPalette = function(source) {
 
     //source contains name of input colour element id
     var inputfield = document.getElementById(source);
@@ -356,12 +362,13 @@ openPalette = function(source) {
     }, false);
 
     svgpal.addEventListener("mousemove", paletteMove = function(evt) {
+
         //determine relative mouse location
-        var slvd_x = evt.clientX - pal_offset[0] + window.pageXOffset;
-        var slvd_y = evt.clientY - pal_offset[1] + window.pageYOffset;
+        let slvd_x = evt.clientX - svgpal.getBoundingClientRect().left;
+        let slvd_y = evt.clientY - svgpal.getBoundingClientRect().top;
 
         //determine colour based on click location
-        var hex_colour = getLocationRGB(slvd_x, slvd_y);
+        let hex_colour = DOT.getLocationRGB(slvd_x, slvd_y);
         inputfield.value = hex_colour;
 
         //change border colour of input to the value
