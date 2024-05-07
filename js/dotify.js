@@ -730,9 +730,9 @@ DOT.brushPaint = function(evt) {
 //Determines whether we are in drawMode or not (edit zone mode), allows correct interaction
 DOT.setPenMode = function(evt) {
 
-    //if in drawMode then create circles on click
-    //if in drawMode and shift key pressed draw circles as mouse moves
-    //if in edit zone mode (drawMode === false) then allow the creation of new shapes.
+    // if in drawMode then create circles on click
+    // if in drawMode and shift key pressed draw circles as mouse moves
+    // if in edit zone mode (drawMode === false) then allow the creation of new shapes.
 
     if(DOT.constants.drawMode === true) {
         var key;
@@ -790,15 +790,16 @@ DOT.handleZoneEdit = function(evt) {
         //In zone shapes edit mode - create new shapes
         switch(evt.type) {
             case 'mousedown':
-                //check if a shape already in creation exists do not start creating a new one 
+                // check if a shape is already in creation, if so do not start creating a new one
+                // - it will be closed by mouseup
                 if(document.getElementById('new_shape_temp')) {
                     return;
                 }
 
-                //catch the X,Y mouse location
+                // Save the mouse X,Y location
                 DOT.constants.shapeCreation = {};
-                DOT.constants.shapeCreation.xOrig = evt.clientX - DOT.constants.svgOffsetX + window.pageXOffset;
-                DOT.constants.shapeCreation.yOrig = evt.clientY - DOT.constants.svgOffsetY + window.pageYOffset;
+                DOT.constants.shapeCreation.xOrig = (evt.clientX - DOT.constants.svgOffsetX) * DOT.constants.rescale;
+                DOT.constants.shapeCreation.yOrig = (evt.clientY - DOT.constants.svgOffsetY) * DOT.constants.rescale;
 
                 var i, zone_t, shp_t;
                 //check the six radio buttons and see which one is checked
@@ -841,8 +842,8 @@ DOT.handleZoneEdit = function(evt) {
                 if(DOT.constants.shapeCreation) {
                     //resize shape
                     //get new mouse coordinates
-                    var nx = evt.clientX - DOT.constants.svgOffsetX + window.pageXOffset;
-                    var ny = evt.clientY - DOT.constants.svgOffsetY + window.pageYOffset;
+                    let nx = (evt.clientX - DOT.constants.svgOffsetX) * DOT.constants.rescale;
+                    let ny = (evt.clientY - DOT.constants.svgOffsetY) * DOT.constants.rescale;
 
                     new_shape = document.getElementById('new_shape_temp');
 
@@ -870,7 +871,7 @@ DOT.handleZoneEdit = function(evt) {
                 break;
 
             case 'mouseup':
-            case 'click': //equivalent to up
+            case 'click': //equivalent to mouse-up
             default:
                 if(DOT.constants.shapeCreation) {
 
@@ -897,7 +898,6 @@ DOT.handleZoneEdit = function(evt) {
 
                     //delete data
                     delete DOT.constants.shapeCreation;
-
                 }
                 break;
         }
@@ -933,20 +933,14 @@ DOT.setEventListeners = function() {
     window.addEventListener('resize', DOT.getCanvasProperties);
     window.addEventListener('scroll', DOT.getCanvasProperties);
 
-    //get canvas width from inputs
-    document.getElementById('canvasw').addEventListener("change", updateInput, false);
+    // update canvas dimension on change
+    document.getElementById('canvasw').addEventListener("keyup", updateInput, false);
+    document.getElementById('canvash').addEventListener("keyup", updateInput, false);
 
-    //get canvas height from inputs
-    document.getElementById('canvash').addEventListener("change", updateInput, false);
-
-    //get DOT sizes from inputs
-    document.getElementById('dotmin').addEventListener("change", updateInput, false);
-
-    //get DOT max size from inputs
-    document.getElementById('dotmax').addEventListener("change", updateInput, false);
-
-    //get DOT buffer size from inputs
-    document.getElementById('dotbuf').addEventListener("change", updateInput, false);
+    // update dot size range from inputs
+    document.getElementById('dotmin').addEventListener("keyup", updateInput, false);
+    document.getElementById('dotmax').addEventListener("keyup", updateInput, false);
+    document.getElementById('dotbuf').addEventListener("keyup", updateInput, false);
 
     // get changes to brush
     document.getElementById('brush_width').addEventListener("keyup", updateInput, false);

@@ -40,14 +40,14 @@
                 </div>
                 <div class='col-sm-6'>
                     <h4>Canvas Size</h4>
-                    <p class="text-end">Width <input id='canvasw' class='w-50' type='text' maxlength='3' value='400' /></p>
-                    <p class="text-end">Height <input id='canvash' class='w-50' type='text' maxlength='3' value='250' /></p>
+                    <p class="text-end"><label for='canvasw'>Width</label> <input id='canvasw' class='w-50' type='text' maxlength='3' value='400' /></p>
+                    <p class="text-end"><label for='canvash'>Height</label> <input id='canvash' class='w-50' type='text' maxlength='3' value='250' /></p>
                 </div>
                 <div class='col-sm-6'>
                     <h4>DOT Size</h4>
-                    <p class="text-end">Minimum <input id='dotmin' class='w-50' type='text' maxlength='3' value='1' /></p>
-                    <p class="text-end">Maximum <input id='dotmax' class='w-50' type='text' maxlength='3' value='8' /></p>
-                    <p class="text-end">Buffer  <input id='dotbuf' class='w-50' type='text' maxlength='3' value='0' /></p>
+                    <p class="text-end"><label for='dotmin'>Minimum</label> <input id='dotmin' class='w-50' type='text' maxlength='3' value='1' /></p>
+                    <p class="text-end"><label for='dotmax'>Maximum</label> <input id='dotmax' class='w-50' type='text' maxlength='3' value='8' /></p>
+                    <p class="text-end"><label for='dotbuf'>Buffer</label> <input id='dotbuf' class='w-50' type='text' maxlength='3' value='0' /></p>
                 </div>
                 <div class='col-12'>
                     <h3>Zone Dot Colours</h3>
@@ -135,8 +135,8 @@
                 <div id='draw_mode' class='col-12'>
                     <h4 class='l'>Draw Mode <small>[<a href='javascript:{}' onclick="DOT.toggleMode('shape')">Edit Zone Shapes Mode</a>]</small></h4>
                     <p>Draw by clicking or dragging the mouse on the canvas</p>
-                    <p class='text-end'>Brush Width: <input id='brush_width' type='text' maxlength='3' value='1' /></p>
-                    <p class='text-end'>Brush Lead in/out: <input id='brush_leadio' type='text' maxlength='3' value='20' /></p>
+                    <p class='text-end'><label for='brush_width'>Brush Width</label> <input id='brush_width' type='text' maxlength='3' value='1' /></p>
+                    <p class='text-end'><label for='brush_leadio'>Brush Lead in/out</label> <input id='brush_leadio' type='text' maxlength='3' value='20' /></p>
                 </div>
 
                 <div class='col-sm-6'>
@@ -161,8 +161,10 @@
                         <option value='z3'>Zone 3</option>
                     </select>
                     </p>
-                    <p><label for='bgcolour'>Background:</label> <input id='bgcolour' class='me-1' type='text' maxlength='6' value='ffffff' />
-                    <a class='palicon' href='javascript:{}' onclick="openPalette('bgcolour')"><img src='palicon.png'/></a>
+
+                    <p>
+                        <label for='bgcolour'>Background</label> <input id='bgcolour' class='me-1 w-75' type='text' maxlength='6' value='ffffff' />
+                        <a class='palicon' href='javascript:{}' onclick="openPalette('bgcolour')"><img src='palicon.png'/></a>
                     </p>
                 </div>
 
