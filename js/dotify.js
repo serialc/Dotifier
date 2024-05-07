@@ -469,6 +469,7 @@ updateHexInput = function(evt) {
 //used to update globabl variables when users change input fields
 updateInput = function(evt) {
 	var subval = this.value;
+    var svgcanvas = document.getElementById('svgobj');
 
 	//if empty replace with string '0'
 	if(subval === '') {
@@ -484,7 +485,7 @@ updateInput = function(evt) {
 				clean = DOT.constants.maxCanvasDim;
 			}
 			DOT.constants.canvasW = clean;
-			document.getElementById('svgobj').setAttributeNS(null, 'width', clean);
+			svgcanvas.viewBox.baseVal.width = clean;
 			document.getElementById('bg_rect').setAttributeNS(null, 'width', clean);
 		break;
 		
@@ -493,7 +494,7 @@ updateInput = function(evt) {
 				clean = DOT.constants.maxCanvasDim;
 			}
 			DOT.constants.canvasH = clean;
-			document.getElementById('svgobj').setAttributeNS(null, 'height', clean);
+			svgcanvas.viewBox.baseVal.height = clean;
 			document.getElementById('bg_rect').setAttributeNS(null, 'height', clean);
 		break;
 
@@ -942,10 +943,10 @@ handleZoneEdit = function(evt) {
 	}
 };
 
-setEventListeners = function() {
+DOT.setEventListeners = function() {
 
 	//get the target zone in the SVG element
-	var target = document.getElementById('targetZone');
+	let target = document.getElementById('targetZone');
 
 	//give zone 'clickability' to add DOTs manually
 	if(target.addEventListener) {
@@ -955,8 +956,8 @@ setEventListeners = function() {
 		target.addEventListener("mousedown", setPenMode, false);
 	}
 
-	//get the whole svg zone
-	var SVGobject = document.getElementById('svgobj');
+	// Get the whole svg zone
+	let SVGobject = document.getElementById('svgobj');
 	//give the svgobj object clickability
 	if(SVGobject.addEventListener) {
 		SVGobject.addEventListener("mousedown", handleZoneEdit, false);
@@ -1078,8 +1079,8 @@ getCanvasProperties = function() {
 	var svg_elem = document.getElementById('svgobj');
 
 	//get the SVG canvas size
-	DOT.constants.canvasW = parseInt(svg_elem.getAttributeNS(null, 'width'), 10);
-	DOT.constants.canvasH = parseInt(svg_elem.getAttributeNS(null, 'height'), 10);
+	DOT.constants.canvasW = svg_elem.viewBox.baseVal.width;
+	DOT.constants.canvasH = svg_elem.viewBox.baseVal.height;
 
 	//get the default zone colours from inputs
 	var i, j, clr_id;
@@ -1178,22 +1179,22 @@ makeBGRect = function() {
 //parse SVG and add shapes to DOT.data.shapes data set
 getZoneShapes = function() {
 	//get the 'g' element holding the shapes for each zone
-	var svg_z = {
+	var zone, children, i, shape, svg_z;
+
+	svg_z = {
 		z1: document.getElementById('z1'),
 		z2: document.getElementById('z2'),
 		z3: document.getElementById('z3')
 	};
 	
-	var zone, children, i, shape;
-
 	//for each zone...
 	for(zone in svg_z) {
 
 		//svg_z[zone] is zone element
-		children = svg_z[zone].childNodes.length;
+		child_count= svg_z[zone].childNodes.length;
 
 		//for each child of the zone...
-		for(i = 0; i < children; i++) {
+		for(i = 0; i < child_count; i++) {
 
 			//shape holds the actually SVG shape
 			shape = svg_z[zone].childNodes[i];
@@ -1238,32 +1239,34 @@ getZoneShapes = function() {
 	}
 };
 
-//test for collision between coordinates and all shapes in data set
+// Test for collision between coordinates and all shapes in data set
 zoneCollision = function(x, y) {
 
 	var dshp;
 	zone_hits = { z1: 0, z2: 0, z3: 0 };
 
-	//go through each shape in DOT.data.shapes
+	// go through each shape in DOT.data.shapes
 	for(shape in DOT.data.shapes) {
 
-		//shape object dshp
+		// get shape object
 		dshp = DOT.data.shapes[shape];
 
 		if(dshp.type === 'r') {
 			if(x > dshp.x && x < (dshp.x + dshp.w) && y > dshp.y && y < (dshp.y + dshp.h)) {
-				//coordinates are inside this rectangle
+				// coordinates are inside this rectangle
 				zone_hits[dshp.z] = zone_hits[dshp.z] + 1;
 			}
 		} else if (dshp.type === 'c') {
 			if(calcDistance(x, y, dshp.x, dshp.y) < dshp.r) {
-				//coordinates are inside this circle
+				// coordinates are inside this circle
 				zone_hits[dshp.z] = zone_hits[dshp.z] + 1;
 			}
 		} else {
 			alert('ERROR: Unknown shape type in shape data set!');
 		}
 	}
+
+    console.log(x,y,zone_hits);
 
 	//although we count the number of hits in each zone we do not use it - only 1 is necessary
 	if(zone_hits.z3 > 0) {
@@ -1277,29 +1280,18 @@ zoneCollision = function(x, y) {
 	}
 };
 
-//the button that dotifies the canvas automatically
-dotify = function() {
+// Do the main 'dotifying' action
+DOT.dotify = function() {
 
-	var dotnum_elem = document.getElementById('dotnum');
+	let iter = 0;
+	let dot_status = document.getElementById('dotifycomp');
+	let cycles = parseInt(document.getElementById('dotnum').value, 10);
+	if(isNaN(cycles)) { cycles = 1; }
 
-	var subval = dotnum_elem.value;
+	// This will be called by setTimeout
+	let dotit = function () {
 
-	//if empty replace with string '1'
-	if(subval === '') {
-		subval = '1';
-	}
-
-	//removes all characters from input except digits 0-9
-	var cycles = parseInt('0' + subval.replace(/[^0-9]/gi,''),10);
-	dotnum_elem.value = cycles;
-
-	var compltn_elem = document.getElementById('dotifycomp');
-
-	var i = 0;
-
-	//this will be called by setTimeout
-	var dotit = function () {
-		//get random location
+		// get a random location
 		var x = getRandInt(DOT.constants.canvasW);
 		var y = getRandInt(DOT.constants.canvasH);
 
@@ -1312,19 +1304,19 @@ dotify = function() {
 		} else {
 			//hook into same function as mouse click
 			createCircle(DOT.data.colours[zone_hit + 'c' + getRandInt(3)], getRandCircleSize(), x, y, zone_hit);
-			compltn_elem.innerHTML = parseInt((i/cycles)*100,10) + '%';
+			dot_status.innerHTML = parseInt((iter/cycles)*100,10) + '%';
 		}
 
 		//if we still have more circles to draw
-		if(i < cycles) {
-			i = i + 1;
-			setTimeout(dotit,0);
+		if(iter < cycles) {
+			iter = iter + 1;
+			setTimeout(dotit, 0);
 		} else {
-			compltn_elem.innerHTML = 'Complete';
+			dot_status.innerHTML = 'Complete';
 		}
 	};
 
-	setTimeout(dotit,0);
+	setTimeout(dotit, 0);
 };
 
 //creates the SVG text output for export
@@ -1404,7 +1396,7 @@ window.onload = function() {
 	getFormDefaults();
 
 	//add event listeners to SVG objects and input elements
-	setEventListeners();
+	DOT.setEventListeners();
 
 	//add existing SVG shapes to dataset for editing and automated DOT
 	getZoneShapes();

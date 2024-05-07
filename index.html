@@ -140,8 +140,17 @@
 
                 <div class='col-sm-6'>
                     <h4>Other Effects</h4>
-                    <p>Hide Target Zones:<input id='toggle_targets' type='checkbox'/></p>
-                    <p>Allow DOT Overlap:<input id='allow_overlap' type='checkbox'/></p>
+                    
+                    <div class="form-check form-switch">
+                        <label class="form-check-label" for="toggle_targets">Hide target zones </label>
+                        <input class="form-check-input" type="checkbox" role="switch" name="toggle_targets" id="toggle_targets">
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <label class="form-check-label" for="allow_overlap">Allow DOT overlap</label>
+                        <input class="form-check-input" type="checkbox" role="switch" name="allow_overlap" id="allow_overlap">
+                    </div>
+
                     <p>Delete DOTS:
                     <select id='deldots'>
                         <option></option>
@@ -151,7 +160,7 @@
                         <option value='z3'>Zone 3</option>
                     </select>
                     </p>
-                    <p><span>Background:</span> <input id='bgcolour' type='text' maxlength='6' value='ffffff' />
+                    <p><label for='bgcolour'>Background:</label> <input id='bgcolour' class='me-1' type='text' maxlength='6' value='ffffff' />
                     <a class='palicon' href='javascript:{}' onclick="openPalette('bgcolour')"><img src='palicon.png'/></a>
                     </p>
                 </div>
@@ -159,9 +168,9 @@
                 <div class='col-12'>
                     <h4>Run</h4>
                     <p>
-                    <span class=''>Dots:</span>
-                    <input id='dotnum' type='text' maxlength='6' size='6' value='500' />
-                    <input type='submit' value='DOTify!' onclick="dotify(); return false;"/><br>
+                    <label class='' for='dotnum'>Dots:</label>
+                    <input id='dotnum' type='number' maxlength='6' size='6' value='500' />
+                    <input type='submit' value='DOTify!' onclick="DOT.dotify(); return false;"/><br>
                     Process: <span id='dotifycomp'>Press 'DOTify' to start process.</span>
                     </p>
                 </div>
@@ -199,7 +208,7 @@
                     </div>
                 </div><!-- end of overlay_bg -->
 
-                <div id='svgPkg' class='col-12' style="width: 100%">
+                <div id='svgPkg' class='col-12'>
                     <svg id='svgobj' viewbox="0 0 400 250" width="100%">
                         <style type="text/css">
 /*start CSS*/
@@ -210,23 +219,17 @@
 /* end CSS */
                         </style>
                         <g id='bg_rect_g'>
-                            <rect id='bg_rect' x='0' y='0' width='400' height='250' fill='white'/>
+                        <rect id='bg_rect' x='0' y='0' width='400' height='250' fill='white'/>
                         </g>
                         <g id='targetZone'>
-                            <g id='z1'>
-                                <rect x="32" y="55" width="323" height="133" />
-                            </g>
-                            <g id='z2'>
-                                <circle cx="192" cy="126" r="116" />
-                            </g>
-                            <g id='z3'>
-                                <rect x="168" y="26" width="50" height="201" />
-                            </g>
+                        <g id='z1'><rect x="32" y="55" width="323" height="133" /></g>
+                        <g id='z2'><circle cx="192" cy="126" r="116" /></g>
+                        <g id='z3'><rect x="168" y="26" width="50" height="201" /></g>
                         </g>
                         <g id='circle_graphics'>
-                            <g id='dotsz1'></g>
-                            <g id='dotsz2'></g>
-                            <g id='dotsz3'></g>
+                        <g id='dotsz1'></g>
+                        <g id='dotsz2'></g>
+                        <g id='dotsz3'></g>
                         </g>
                     </svg>
                 </div><!-- end of svgPkg div -->
