@@ -2,196 +2,154 @@
 // Filename: dotify.js
 // Feb 11, 2010.
 
-//Declare global variables
+// Declare global variables
 var DOT = {};
 
 DOT.constants = {
-	svgOffsetX: 0,
-	svgOffsetY: 0,
-	maxCanvasDim: 675,
-	minSize: 2,
-	maxSize: 6,
-	canvasW: 0,
-	canvasH: 0,
-	penMode: false,
-	circleSizes: 3,	//this is actually the radius span (if 2, and minSize is 2 circles will have a radius of 2-4)
-	buffer: 0,
-	edgeBuffer: 1,
-	brushWidth: 1,
-	brushLeadIO: 1,
-	brushLeadStatus: 0,
-	brushLeadValue: 1,
-	brushDensity: 5,	//lower if it lags
-	drawMode: true,
-	allowOverlap: false,
-	svgNS: "http://www.w3.org/2000/svg"
+    svgOffsetX: 0,
+    svgOffsetY: 0,
+    maxCanvasDim: 675,
+    minSize: 2,
+    maxSize: 6,
+    canvasW: 0,
+    canvasH: 0,
+    penMode: false,
+    circleSizes: 3,	//this is actually the radius span (if 2, and minSize is 2 circles will have a radius of 2-4)
+    buffer: 0,
+    edgeBuffer: 1,
+    brushWidth: 1,
+    brushLeadIO: 1,
+    brushLeadStatus: 0,
+    brushLeadValue: 1,
+    brushDensity: 5,	//lower if it lags
+    drawMode: true,
+    allowOverlap: false,
+    svgNS: "http://www.w3.org/2000/svg"
 };
 
 DOT.data = {
-	count: 0,
-	circles: {},
-	colours: {},
-	shp_count: 0,
-	shapes: {}
+    count: 0,
+    circles: {},
+    colours: {},
+    shp_count: 0,
+    shapes: {}
 };
-//End of global variables
+// End of global variables
 
-//Main Code
+// Main Code
 
-hide = function(id) {
-	document.getElementById(id).setAttributeNS(null, 'visibility','hidden');
-};
-
-show = function(id) {
-	document.getElementById(id).setAttributeNS(null, 'visibility','visible');
-};
-
-vanish = function(id) {
-	document.getElementById(id).style.display = 'none';
-};
-
-appear = function(id) {
-	document.getElementById(id).style.display = 'inherit';
-};
-
-//determines visibility of draw_mode or edit_zone_mode
+// determines visibility of draw_mode or edit_zone_mode
 DOT.toggleMode = function(mode) {
-	if(mode === 'draw') {
+    if(mode === 'draw') {
         document.getElementById('edit_zone_mode').style.display = 'none';
         document.getElementById('draw_mode').style.display = '';
-		DOT.constants.drawMode = true;
-	}
+        DOT.constants.drawMode = true;
+    }
     if(mode === 'shape') {
         document.getElementById('draw_mode').style.display = 'none';
         document.getElementById('edit_zone_mode').style.display = '';
-		DOT.constants.drawMode = false;
-	}
+        DOT.constants.drawMode = false;
+    }
 };
 
-print = function(text) {
-	document.getElementById('outputParag').appendChild(document.createTextNode(text+'\n'));
-};
-
-toggleTargetVis = function(evt) {
-	if(this.checked) {
-		hide('targetZone');
-	} else {
-		show('targetZone');
-	}
+DOT.toggleTargetVis = function(evt) {
+    if(this.checked) {
+        document.getElementById('targetZone').setAttributeNS(null, 'visibility','hidden');
+    } else {
+        document.getElementById('targetZone').setAttributeNS(null, 'visibility','visible');
+    }
 };
 
 //changes constant regarding allowing overlap
 toggleOverlap = function(evt) {
-	if(this.checked) {
-		DOT.constants.allowOverlap = true;
-	} else {
-		DOT.constants.allowOverlap = false;
-	}
-};
-
-//for testing, prints out shape data
-printShapeData = function() {
-	var text = '';
-	var shp;
-
-	for(data in DOT.data.shapes) {
-		shp = DOT.data.shapes[data];
-		text += data + ' is type:' + shp.type + ' z:' + shp.z + ' x:' + shp.x + ' y:' + shp.y + ' w:' + shp.w + ' h:' + shp.h + ' r:' + shp.r + '\n';
-	}
-	print(text);
-};
-
-//for testing, prints out all data
-printCirclesData = function() {
-	var text = '';
-	var i = 0;
-	for(data in DOT.data.circles) {
-		text += i++ + ' is ' + DOT.data.circles[data].cx + ':' + DOT.data.circles[data].cy + ':' + DOT.data.circles[data].cr + '; ';
-	}
-	print(text);
+    if(this.checked) {
+        DOT.constants.allowOverlap = true;
+    } else {
+        DOT.constants.allowOverlap = false;
+    }
 };
 
 //pythagoras distance calculation between to points
-calcDistance = function(x1, y1, x2, y2) {
-	return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+DOT.calcDistance = function(x1, y1, x2, y2) {
+    return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
 };
 
 //test DOT location/size for canvas edge collision
 DOT.hitEdge = function(x, y, r) {
 
-	//if the edge of the circle is above or to the left of the canvas return true 
-	if( x-r < 0 + DOT.constants.edgeBuffer || y-r < 0 + DOT.constants.edgeBuffer ) {
-		return true;
-	}
-	
-	//if the edge of the circle is below or to the right of the canvas return true
-	if( (x+r) > (DOT.constants.canvasW - DOT.constants.edgeBuffer) || (y+r) > (DOT.constants.canvasH - DOT.constants.edgeBuffer) ) {
-		return true;
-	}
-	return false;
+    //if the edge of the circle is above or to the left of the canvas return true 
+    if( x-r < 0 + DOT.constants.edgeBuffer || y-r < 0 + DOT.constants.edgeBuffer ) {
+        return true;
+    }
+
+    //if the edge of the circle is below or to the right of the canvas return true
+    if( (x+r) > (DOT.constants.canvasW - DOT.constants.edgeBuffer) || (y+r) > (DOT.constants.canvasH - DOT.constants.edgeBuffer) ) {
+        return true;
+    }
+    return false;
 };
 
 //check for collision between proposed point and every other point as well to canvas edge
 checkForCollision = function(x, y, r) {
 
-	//see if dot is too close to canvas edge
-	if( DOT.hitEdge(x, y, r) ) {
-		return true;
-	}
+    //see if dot is too close to canvas edge
+    if( DOT.hitEdge(x, y, r) ) {
+        return true;
+    }
 
-	var shp;
-	//see if dot is too close to another existing point
-	for(data in DOT.data.circles) {
-		shp = DOT.data.circles[data];
-		//if the new circle overlaps an older circle or the edge of the canvas return true
-		if(calcDistance(x, y, shp.cx, shp.cy) < (DOT.constants.buffer + shp.cr + r)) {
-			return true;
-		}
-		//else continue checking the rest
-	}
-	return false;
+    var shp;
+    //see if dot is too close to another existing point
+    for(data in DOT.data.circles) {
+        shp = DOT.data.circles[data];
+        //if the new circle overlaps an older circle or the edge of the canvas return true
+        if(DOT.calcDistance(x, y, shp.cx, shp.cy) < (DOT.constants.buffer + shp.cr + r)) {
+            return true;
+        }
+        //else continue checking the rest
+    }
+    return false;
 };
 
 //tests parameters and if okay creates a new SVG circle object and adds it to JS data
 createCircle = function(c_colour, c_size, c_locx, c_locy, zone) {
 
-	//if dot overlaps are not allowed check for collision
-	if(DOT.constants.allowOverlap === false) {
+    //if dot overlaps are not allowed check for collision
+    if(DOT.constants.allowOverlap === false) {
 
-		//see if new proposed circle is too close to another existing circle - if yes skip creation of new circle
-		while(checkForCollision(c_locx, c_locy, c_size)) {
-			c_size = c_size - 0.5;
-			if(c_size < DOT.constants.minSize) {
-				return;
-			}
-		}
-	}
-	
-	//create circle element
-	var newCircle = document.createElementNS(DOT.constants.svgNS, "circle");
+        //see if new proposed circle is too close to another existing circle - if yes skip creation of new circle
+        while(checkForCollision(c_locx, c_locy, c_size)) {
+            c_size = c_size - 0.5;
+            if(c_size < DOT.constants.minSize) {
+                return;
+            }
+        }
+    }
 
-	//set circle attributes
-	newCircle.setAttributeNS(null, 'cx', c_locx);
-	newCircle.setAttributeNS(null, 'cy', c_locy);
-	newCircle.setAttributeNS(null, 'r', c_size);
-	newCircle.setAttributeNS(null, 'fill', c_colour);
+    //create circle element
+    var newCircle = document.createElementNS(DOT.constants.svgNS, "circle");
 
-	//Add circle to svg canvas
-	document.getElementById('dots' + zone).appendChild(newCircle);
+    //set circle attributes
+    newCircle.setAttributeNS(null, 'cx', c_locx);
+    newCircle.setAttributeNS(null, 'cy', c_locy);
+    newCircle.setAttributeNS(null, 'r', c_size);
+    newCircle.setAttributeNS(null, 'fill', c_colour);
 
-	//Add circle 0bject to data set
-	DOT.data.circles[DOT.data.count] = {cx: c_locx, cy: c_locy, cr: c_size, z: zone, f: c_colour};
-	DOT.data.count = DOT.data.count + 1;
+    //Add circle to svg canvas
+    document.getElementById('dots' + zone).appendChild(newCircle);
+
+    //Add circle 0bject to data set
+    DOT.data.circles[DOT.data.count] = {cx: c_locx, cy: c_locy, cr: c_size, z: zone, f: c_colour};
+    DOT.data.count = DOT.data.count + 1;
 };
 
 //get a random float size determined by DOT.constants.minSize and .circleSizes
 getRandCircleSize = function() {
-	return ((Math.random() * DOT.constants.circleSizes) + DOT.constants.minSize);
+    return ((Math.random() * DOT.constants.circleSizes) + DOT.constants.minSize);
 };
 
 //get a random integer
 getRandInt = function(range) {
-	return (Math.ceil(Math.random()*range));
+    return (Math.ceil(Math.random()*range));
 };
 
 // Click or Drag on SVG canvas does the following
@@ -201,195 +159,193 @@ DOT.SvgCanvasClick= function(evt, xshift, yshift) {
 
     tidz = evt.target.parentNode.id;
 
-    // translate the click to canvas coordinates
-    //x = (evt.clientX - DOT.constants.svgOffsetX) * DOT.constants.rescale;
-    //y = (evt.clientY - DOT.constants.svgOffsetY) * DOT.constants.rescale;
-    x = (evt.clientX - DOT.constants.svgOffsetX) * DOT.constants.rescale;
-    y = (evt.clientY - DOT.constants.svgOffsetY) * DOT.constants.rescale;
+    // translate the viewscreen click to canvas coordinates
+    x = (evt.clientX - DOT.constants.svgOffsetX) * DOT.constants.rescale + xshift;
+    y = (evt.clientY - DOT.constants.svgOffsetY) * DOT.constants.rescale + yshift;
 
-	clr_style = getRandInt(3);
+    clr_style = getRandInt(3);
 
-	switch (tidz) {
-		case 'z1':
-			clr_style = DOT.data.colours['z1c' + clr_style];
-		break;
+    switch (tidz) {
+        case 'z1':
+            clr_style = DOT.data.colours['z1c' + clr_style];
+            break;
 
-		case 'z2':
-			clr_style = DOT.data.colours['z2c' + clr_style];
-		break;
+        case 'z2':
+            clr_style = DOT.data.colours['z2c' + clr_style];
+            break;
 
-		case 'z3':
-			clr_style = DOT.data.colours['z3c' + clr_style];
-		break;
+        case 'z3':
+            clr_style = DOT.data.colours['z3c' + clr_style];
+            break;
 
-		case 'bg_rect_g':
-			//you clicked/mouse over bg_rect - no problem - do nothing
-		return;//notice this is not a break;
-		//break; //not required
-		
-		default:
-			alert('ERROR: DOT.SvgCanvasClick failed to determine which zone you clicked on! Clicked on ' + tidz);
-	}
+        case 'bg_rect_g':
+            //you clicked/mouse over bg_rect - no problem - do nothing
+            return;//notice this is not a break;
+            //break; //not required
 
-	createCircle(clr_style, getRandCircleSize(), x, y, tidz);
+        default:
+            alert('ERROR: DOT.SvgCanvasClick failed to determine which zone you clicked on! Clicked on ' + tidz);
+    }
+
+    createCircle(clr_style, getRandCircleSize(), x, y, tidz);
 };
 
 // based on http://www.quirksmode.org/js/findpos.html
 //find the x,y location of the object
 findObj = function(obj) {
-	var curleft = 0;
-	var curtop = 0;
+    var curleft = 0;
+    var curtop = 0;
 
-	if (obj.offsetParent) {
-		while (obj.offsetParent) {
-			curleft += obj.offsetLeft;
-			curtop += obj.offsetTop;
-			obj = obj.offsetParent;
-		}
-		return [curleft,curtop];
-	}
+    if (obj.offsetParent) {
+        while (obj.offsetParent) {
+            curleft += obj.offsetLeft;
+            curtop += obj.offsetTop;
+            obj = obj.offsetParent;
+        }
+        return [curleft,curtop];
+    }
 };
 
 //converts object containing three 0-255 values and returns a six digit hex value
 prepColours = function(colour) {
-	colour.R = parseInt(colour.R,10).toString(16);
-	colour.G = parseInt(colour.G,10).toString(16);
-	colour.B = parseInt(colour.B,10).toString(16);
-	
-	for( clr in colour ) {
-		//if it is '0' --> '00'
-		if(colour[clr] === '0' ) {
-			colour[clr] = '00';
-		} else if(colour[clr].length === 1) {
-			//the value is not '0' but only has 1 digit, append a zero
-			colour[clr] = '0' + colour[clr];
-		}
-	}
+    colour.R = parseInt(colour.R,10).toString(16);
+    colour.G = parseInt(colour.G,10).toString(16);
+    colour.B = parseInt(colour.B,10).toString(16);
 
-	//create 6 value hex colour code
-	return colour.R + '' + colour.G + '' + colour.B;
+    for( clr in colour ) {
+        //if it is '0' --> '00'
+        if(colour[clr] === '0' ) {
+            colour[clr] = '00';
+        } else if(colour[clr].length === 1) {
+            //the value is not '0' but only has 1 digit, append a zero
+            colour[clr] = '0' + colour[clr];
+        }
+    }
+
+    //create 6 value hex colour code
+    return colour.R + '' + colour.G + '' + colour.B;
 };
 
 getLocationRGB = function(x, y) {
-	var hex_colour = '';
-	var sec_size = 200/6;
-	var sec_colour = parseInt(y/sec_size,10);
+    var hex_colour = '';
+    var sec_size = 200/6;
+    var sec_colour = parseInt(y/sec_size,10);
 
-	//hold a 0 to 255 value
-	var w_val = 0;
-	var b_val = 0;
-	var c_val = {};
+    //hold a 0 to 255 value
+    var w_val = 0;
+    var b_val = 0;
+    var c_val = {};
 
-	var colour = {
-		R: 0,
-		G: 0,
-		B: 0
-	};
-	
-	//clicked on main palette
-	if(x < 201) {
-		//determine black / white of colour
-		if(x > 100) {
-			// 100 < x < 201
-			b_val = parseInt((x-100)*255/100,10);
-		} else {
-			// x < 101
-			w_val = parseInt((100-x)*255/100,10);
-		}
-		
-		//based on section get y, convert to 0-255 range value
-		hue = (y-(sec_size*sec_colour))*255/sec_size;
+    var colour = {
+        R: 0,
+        G: 0,
+        B: 0
+    };
 
-		c_val.c_none = 0+w_val;
-		c_val.c_vary_inc = (hue)+(w_val*(1 - hue/255))-(b_val*(hue/255));
-		c_val.c_vary_dec = (255-hue)+(w_val*(hue/255))-(b_val*(1 - hue/255));
-		c_val.c_full = 255-b_val;
+    //clicked on main palette
+    if(x < 201) {
+        //determine black / white of colour
+        if(x > 100) {
+            // 100 < x < 201
+            b_val = parseInt((x-100)*255/100,10);
+        } else {
+            // x < 101
+            w_val = parseInt((100-x)*255/100,10);
+        }
 
-		switch(sec_colour) {
-			case 0:
-				//red to yellow, section 1
-				// full red, increasing green, no blue
-				//determine R G B colour values and create hex 6 value string
-				colour.R = c_val.c_full;
-				colour.G = c_val.c_vary_inc;
-				colour.B = c_val.c_none;
-			break;
-			case 1:
-				//yellow to green, section 2
-				//decreasing red, full green, no blue
-				colour.R = c_val.c_vary_dec;
-				colour.G = c_val.c_full;
-				colour.B = c_val.c_none;
-			break;
-			case 2:
-				//green to teal, section 3
-				//no red, full green, increasing blue
-				colour.R = c_val.c_none;
-				colour.G = c_val.c_full;
-				colour.B = c_val.c_vary_inc;
-			break;
-			case 3:
-				//teal to blue, section 4
-				//no red, decreasing green, full blue
-				colour.R = c_val.c_none;
-				colour.G = c_val.c_vary_dec;
-				colour.B = c_val.c_full;
-			break;
-			case 4:
-				//blue to fucia, section 5
-				//increasing red, no green, full blue
-				colour.R = c_val.c_vary_inc;
-				colour.G = c_val.c_none;
-				colour.B = c_val.c_full;
-			break;
-			case 5:
-				//fucia to red, section 6
-				//full red, no green, decreasing blue
-				colour.R = c_val.c_full;
-				colour.G = c_val.c_none;
-				colour.B = c_val.c_vary_dec;
-			break;
-		}
+        //based on section get y, convert to 0-255 range value
+        hue = (y-(sec_size*sec_colour))*255/sec_size;
 
-		//assemble colour 0-255 values to hex colour code
-		hex_colour = prepColours(colour);
+        c_val.c_none = 0+w_val;
+        c_val.c_vary_inc = (hue)+(w_val*(1 - hue/255))-(b_val*(hue/255));
+        c_val.c_vary_dec = (255-hue)+(w_val*(hue/255))-(b_val*(1 - hue/255));
+        c_val.c_full = 255-b_val;
 
-	} else {	//clicked on greyscale palette
-		//x is 201 to 220
-		hex_colour = parseInt(y*255/200,10).toString(16);
-		if(hex_colour.length === 1) {
-			hex_colour = '0' + hex_colour;
-		}
-		//format nicely
-		hex_colour = hex_colour + '' + hex_colour + '' + hex_colour;
-	}
-	return hex_colour;
+        switch(sec_colour) {
+            case 0:
+                //red to yellow, section 1
+                // full red, increasing green, no blue
+                //determine R G B colour values and create hex 6 value string
+                colour.R = c_val.c_full;
+                colour.G = c_val.c_vary_inc;
+                colour.B = c_val.c_none;
+                break;
+            case 1:
+                //yellow to green, section 2
+                //decreasing red, full green, no blue
+                colour.R = c_val.c_vary_dec;
+                colour.G = c_val.c_full;
+                colour.B = c_val.c_none;
+                break;
+            case 2:
+                //green to teal, section 3
+                //no red, full green, increasing blue
+                colour.R = c_val.c_none;
+                colour.G = c_val.c_full;
+                colour.B = c_val.c_vary_inc;
+                break;
+            case 3:
+                //teal to blue, section 4
+                //no red, decreasing green, full blue
+                colour.R = c_val.c_none;
+                colour.G = c_val.c_vary_dec;
+                colour.B = c_val.c_full;
+                break;
+            case 4:
+                //blue to fucia, section 5
+                //increasing red, no green, full blue
+                colour.R = c_val.c_vary_inc;
+                colour.G = c_val.c_none;
+                colour.B = c_val.c_full;
+                break;
+            case 5:
+                //fucia to red, section 6
+                //full red, no green, decreasing blue
+                colour.R = c_val.c_full;
+                colour.G = c_val.c_none;
+                colour.B = c_val.c_vary_dec;
+                break;
+        }
+
+        //assemble colour 0-255 values to hex colour code
+        hex_colour = prepColours(colour);
+
+    } else {	//clicked on greyscale palette
+        //x is 201 to 220
+        hex_colour = parseInt(y*255/200,10).toString(16);
+        if(hex_colour.length === 1) {
+            hex_colour = '0' + hex_colour;
+        }
+        //format nicely
+        hex_colour = hex_colour + '' + hex_colour + '' + hex_colour;
+    }
+    return hex_colour;
 };
 
 openPalette = function(source) {
 
-	//source contains name of input colour element id
-	var inputfield = document.getElementById(source);
+    //source contains name of input colour element id
+    var inputfield = document.getElementById(source);
 
-	//Make the palette visible
-	var ovrlay = document.getElementById('overlay_bg');
-	var ovrlay_pal = document.getElementById('overlay_palette');
-	
-	//if the palette is already visible - hide it
-	if(ovrlay.style.visibility === 'visible') {
-		ovrlay.style.visibility = 'hidden';
-		return;
-	}
+    //Make the palette visible
+    var ovrlay = document.getElementById('overlay_bg');
+    var ovrlay_pal = document.getElementById('overlay_palette');
 
-	//if it's not hidden display it now
-	ovrlay.style.visibility = 'visible';
-	
-	//get the location of the SVG palette to determine relative mouse click location
-	var svgpalPkg = document.getElementById('svgpalPkg');
-	var pal_offset = findObj(svgpalPkg);
+    //if the palette is already visible - hide it
+    if(ovrlay.style.visibility === 'visible') {
+        ovrlay.style.visibility = 'hidden';
+        return;
+    }
 
-	//get svg palette for event handling
-	var svgpal = document.getElementById('svgpal');
+    //if it's not hidden display it now
+    ovrlay.style.visibility = 'visible';
+
+    //get the location of the SVG palette to determine relative mouse click location
+    var svgpalPkg = document.getElementById('svgpalPkg');
+    var pal_offset = findObj(svgpalPkg);
+
+    //get svg palette for event handling
+    var svgpal = document.getElementById('svgpal');
 
     //on click get location of click on palette, convert to hex colour, update input field, close palette
     svgpal.addEventListener("click", paletteClick = function(evt) {
@@ -473,6 +429,7 @@ updateHexInput = function(evt) {
 
 //used to update globabl variables when users change input fields
 updateInput = function(evt) {
+
     var subval = this.value;
     var svgcanvas = document.getElementById('svgobj');
 
@@ -680,7 +637,7 @@ deleteDots = function(evt) {
 DOT.dotBlast = function(evt, dots) {
     var i, dist, xshift, yshift;
     for( i = 0; i < dots; i++ ) {
-        dist = getRandInt(DOT.constants.brushWidth*DOT.constants.brushLeadValue / DOT.constants.brushLeadIO);
+        dist = getRandInt(DOT.constants.brushWidth * DOT.constants.brushLeadValue / DOT.constants.brushLeadIO);
         xshift = dist*Math.sin(Math.PI*2*i/dots);
         yshift = dist*Math.cos(Math.PI*2*i/dots);
         DOT.SvgCanvasClick(evt, xshift, yshift);
@@ -688,6 +645,7 @@ DOT.dotBlast = function(evt, dots) {
 };
 
 DOT.brushPaint = function(evt) {
+    
     // If brush width is 1 simply draw a point and return/exit function
     if(DOT.constants.brushWidth === 1) {
         switch (evt.type) {
@@ -890,7 +848,7 @@ DOT.handleZoneEdit = function(evt) {
 
                     if(DOT.constants.shapeCreation.type === 'c') {
                         //Circle Radius Edit
-                        new_shape.setAttributeNS(null,'r', parseInt(calcDistance(nx, ny, DOT.constants.shapeCreation.xOrig, DOT.constants.shapeCreation.yOrig),10));
+                        new_shape.setAttributeNS(null,'r', parseInt(DOT.calcDistance(nx, ny, DOT.constants.shapeCreation.xOrig, DOT.constants.shapeCreation.yOrig),10));
                     } else {
                         //Rectangle Shape Edit
                         //depending on mouse location change x,y and width/height or only width/height.
@@ -976,46 +934,47 @@ DOT.setEventListeners = function() {
     window.addEventListener('scroll', DOT.getCanvasProperties);
 
     //get canvas width from inputs
-    var canv_w = document.getElementById('canvasw');
-    canv_w.addEventListener("change", updateInput, false);
+    document.getElementById('canvasw').addEventListener("change", updateInput, false);
 
     //get canvas height from inputs
-    var canv_h = document.getElementById('canvash');
-    canv_h.addEventListener("change", updateInput, false);
+    document.getElementById('canvash').addEventListener("change", updateInput, false);
 
     //get DOT sizes from inputs
-    var dmin = document.getElementById('dotmin');
-    dmin.addEventListener("change", updateInput, false);
+    document.getElementById('dotmin').addEventListener("change", updateInput, false);
 
     //get DOT max size from inputs
-    var dmax = document.getElementById('dotmax');
-    dmax.addEventListener("change", updateInput, false);
+    document.getElementById('dotmax').addEventListener("change", updateInput, false);
 
     //get DOT buffer size from inputs
-    var bufval = document.getElementById('dotbuf');
-    bufval.addEventListener("change", updateInput, false);
+    document.getElementById('dotbuf').addEventListener("change", updateInput, false);
 
-    var brush_width = document.getElementById('brush_width');
-    brush_width.addEventListener("change", updateInput, false);
-
-    var brush_leadio = document.getElementById('brush_leadio');
-    brush_leadio.addEventListener("change", updateInput, false);
+    // get changes to brush
+    document.getElementById('brush_width').addEventListener("keyup", updateInput, false);
+    document.getElementById('brush_leadio').addEventListener("keyup", updateInput, false);
 
     //hide/show the zone target shapes from SVG-canvas
-    var togtar = document.getElementById('toggle_targets');
-    togtar.addEventListener("change", toggleTargetVis, false);
+    document.getElementById('toggle_targets').addEventListener("change", DOT.toggleTargetVis, false);
 
     //dis/allow DOT overlap
-    var dot_overlap = document.getElementById('allow_overlap');
-    dot_overlap.addEventListener("change", toggleOverlap, false);
+    document.getElementById('allow_overlap').addEventListener("change", toggleOverlap, false);
 
     //delete dots in zones
-    var deldot_select = document.getElementById('deldots');
-    deldot_select.addEventListener("change", deleteDots, false);
+    document.getElementById('deldots').addEventListener("change", deleteDots, false);
 
     //update background colour of SVG canvas
-    var bgcolour = document.getElementById('bgcolour');
-    bgcolour.addEventListener("change", updateHexInput, false);
+    document.getElementById('bgcolour').addEventListener("change", updateHexInput, false);
+
+    // Export button packages SVG and returns it
+    document.getElementById('exportbutton').onclick = function(e) {
+        let blob = new Blob(
+            // select the parent, not the SVG itself!
+            [document.getElementById('svgPkg').innerHTML],
+            {type: "text/plain;charset=utf-8"}
+        );
+
+        saveAs(blob, "dotifier_export.svg");
+    };
+
 
     var i, j;
     i = j = 1;
@@ -1037,9 +996,8 @@ DOT.setEventListeners = function() {
     }
 };
 
-//scan the SVG canvas and store the results
+// Get the SVG canvas properties and save to global constant
 DOT.getCanvasProperties = function() {
-    console.log('getting canvas properties');
     var svg_elem = document.getElementById('svgobj');
 
     // x,y of svg canvas
@@ -1228,7 +1186,7 @@ zoneCollision = function(x, y) {
                 zone_hits[dshp.z] = zone_hits[dshp.z] + 1;
             }
         } else if (dshp.type === 'c') {
-            if(calcDistance(x, y, dshp.x, dshp.y) < dshp.r) {
+            if(DOT.calcDistance(x, y, dshp.x, dshp.y) < dshp.r) {
                 // coordinates are inside this circle
                 zone_hits[dshp.z] = zone_hits[dshp.z] + 1;
             }
@@ -1288,74 +1246,6 @@ DOT.dotify = function() {
     };
 
     setTimeout(dotit, 0);
-};
-
-//creates the SVG text output for export
-dotExport = function() {
-
-    var tarea = document.getElementById('export_ta');
-    tarea.style.visibility = 'visible';
-    tarea.style.display = 'block';
-    var newtext, shp;
-
-    newtext = "<svg xmlns='http://www.w3.org/2000/svg' width='" + DOT.constants.canvasW + "' height='" + DOT.constants.canvasH + "' >\n";
-
-    //print out the background
-    if(document.getElementById('exp_bg').checked === true) {
-        newtext += "<rect x='0' y='0' width='" + DOT.constants.canvasW + "' height='" + DOT.constants.canvasH + "' fill='" + document.getElementById('bg_rect').getAttributeNS(null,'fill') + "' />\n";
-    }
-
-    //if the checkbox is checked add zone shapes as well
-    if(document.getElementById('exp_zones').checked === true) {
-        //some CSS styling
-        tarea.innerHTML += "<style type='text/css'>\n/*start CSS*/\n#z1, #z2, #z3 {stroke: none;}\n#z1 {fill: #d99;}\n#z2 {fill: #ff5;}\n#z3 {fill: #339;}\n/* end CSS */\n</style>\n";
-        newtext += "<g id='zones'>\n";
-
-        //SVG for shapes
-        var i;
-        //for each zone
-        for( i = 1; i < 4; i++ ) {
-            newtext += "<g id='z" + i + "'>\n";
-            //for each object in the zone
-            for(count in DOT.data.shapes) {
-                shp = DOT.data.shapes[count];
-                //rect or circle?
-                if(shp.z === 'z' + i) {
-                    if(shp.type === 'r') {
-                        //rect
-                        newtext += "<rect x='" + shp.x + "' y='" + shp.y + "' width='" + shp.w + "' height='" + shp.h + "' />\n";
-                    } else {
-                        //circle
-                        newtext += "<circle cx='" + shp.x + "' cy='" + shp.y + "' r='" + shp.r + "' />\n";
-                    }
-                }
-            }
-            newtext += "</g>\n";
-        }
-        newtext += "</g>\n";
-    }// end of optional zone shapes output
-
-    newtext += "<g id='dots'>\n";
-
-    //for each dot
-    for(count in DOT.data.circles) {
-        shp = DOT.data.circles[count];
-        //circle
-        newtext += "<circle cx='" + shp.cx + "' cy='" + shp.cy + "' r='" + shp.cr + "' fill='" + shp.f + "' />\n";
-    }
-    newtext += "</g>\n";
-
-    newtext += "</svg>";
-
-    //add svg text to textarea
-    tarea.value = newtext;
-
-    //add the newtext to a new window
-    //var expWindow = window.open('','exp_window');
-    //expWindow.document.open ('content-type: text/xml');
-    //expWindow.focus();
-    //expWindow.write(newtext);
-    //expWindow.document.close();
 };
 
 //on page load assign event listeners to objects
