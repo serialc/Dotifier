@@ -117,7 +117,7 @@ calcDistance = function(x1, y1, x2, y2) {
 };
 
 //test DOT location/size for canvas edge collision
-hitEdge = function(x, y, r) {
+DOT.hitEdge = function(x, y, r) {
 
 	//if the edge of the circle is above or to the left of the canvas return true 
 	if( x-r < 0 + DOT.constants.edgeBuffer || y-r < 0 + DOT.constants.edgeBuffer ) {
@@ -135,7 +135,7 @@ hitEdge = function(x, y, r) {
 checkForCollision = function(x, y, r) {
 
 	//see if dot is too close to canvas edge
-	if( hitEdge(x, y, r) ) {
+	if( DOT.hitEdge(x, y, r) ) {
 		return true;
 	}
 
@@ -194,15 +194,22 @@ getRandInt = function(range) {
 	return (Math.ceil(Math.random()*range));
 };
 
-//onclick of SVG canvas do this
-handle_SVG_Canvas_Click = function(evt, xshift, yshift) {
-	var targeted_zone = evt.target.parentNode.id;
-	var resolved_x = evt.clientX - DOT.constants.svgOffsetX + window.pageXOffset + xshift;
-	var resolved_y = evt.clientY - DOT.constants.svgOffsetY + window.pageYOffset + yshift;
+// Click or Drag on SVG canvas does the following
+DOT.SvgCanvasClick= function(evt, xshift, yshift) {
 
-	var clr_style = getRandInt(3);
+    let x, y, clr_style, tidz;
 
-	switch (targeted_zone) {
+    tidz = evt.target.parentNode.id;
+
+    // translate the click to canvas coordinates
+    //x = (evt.clientX - DOT.constants.svgOffsetX) * DOT.constants.rescale;
+    //y = (evt.clientY - DOT.constants.svgOffsetY) * DOT.constants.rescale;
+    x = (evt.clientX - DOT.constants.svgOffsetX) * DOT.constants.rescale;
+    y = (evt.clientY - DOT.constants.svgOffsetY) * DOT.constants.rescale;
+
+	clr_style = getRandInt(3);
+
+	switch (tidz) {
 		case 'z1':
 			clr_style = DOT.data.colours['z1c' + clr_style];
 		break;
@@ -221,10 +228,10 @@ handle_SVG_Canvas_Click = function(evt, xshift, yshift) {
 		//break; //not required
 		
 		default:
-			alert('ERROR: handle_SVG_Canvas_Click failed to determine which zone you clicked on! Clicked on ' + targeted_zone);
+			alert('ERROR: DOT.SvgCanvasClick failed to determine which zone you clicked on! Clicked on ' + tidz);
 	}
 
-	createCircle(clr_style, getRandCircleSize(), resolved_x, resolved_y, targeted_zone);
+	createCircle(clr_style, getRandCircleSize(), x, y, tidz);
 };
 
 // based on http://www.quirksmode.org/js/findpos.html
@@ -384,1023 +391,987 @@ openPalette = function(source) {
 	//get svg palette for event handling
 	var svgpal = document.getElementById('svgpal');
 
-	//on click get location of click on palette, convert to hex colour, update input field, close palette
-	if(svgpal.addEventListener) {
-		svgpal.addEventListener("click", paletteClick = function(evt) {
-			//could just set visibility to '' since css is set to hidden - but this is explicit/repititious to avoid confusion.
-			ovrlay.style.visibility = 'hidden';
-			svgpal.removeEventListener("click", paletteClick, false);
-			svgpal.removeEventListener("mousemove", paletteMove, false);
-		}, false);
+    //on click get location of click on palette, convert to hex colour, update input field, close palette
+    svgpal.addEventListener("click", paletteClick = function(evt) {
+        //could just set visibility to '' since css is set to hidden - but this is explicit/repititious to avoid confusion.
+        ovrlay.style.visibility = 'hidden';
+        svgpal.removeEventListener("click", paletteClick, false);
+        svgpal.removeEventListener("mousemove", paletteMove, false);
+    }, false);
 
-		svgpal.addEventListener("mousemove", paletteMove = function(evt) {
-			//determine relative mouse location
-			var slvd_x = evt.clientX - pal_offset[0] + window.pageXOffset;
-			var slvd_y = evt.clientY - pal_offset[1] + window.pageYOffset;
+    svgpal.addEventListener("mousemove", paletteMove = function(evt) {
+        //determine relative mouse location
+        var slvd_x = evt.clientX - pal_offset[0] + window.pageXOffset;
+        var slvd_y = evt.clientY - pal_offset[1] + window.pageYOffset;
 
-			//determine colour based on click location
-			var hex_colour = getLocationRGB(slvd_x, slvd_y);
-			inputfield.value = hex_colour;
+        //determine colour based on click location
+        var hex_colour = getLocationRGB(slvd_x, slvd_y);
+        inputfield.value = hex_colour;
 
-			//change border colour of input to the value
-			inputfield.style.border = 'solid 3px #' + hex_colour;
+        //change border colour of input to the value
+        inputfield.style.border = 'solid 3px #' + hex_colour;
 
-			ovrlay_pal.style.backgroundColor = '#' + hex_colour;
+        ovrlay_pal.style.backgroundColor = '#' + hex_colour;
 
-			//if the palette is being used for the svg bg colour
-			if(inputfield.id === 'bgcolour') {
-				document.getElementById('bg_rect').setAttributeNS(null, 'fill', '#' + hex_colour);
-				return;
-			}
+        //if the palette is being used for the svg bg colour
+        if(inputfield.id === 'bgcolour') {
+            document.getElementById('bg_rect').setAttributeNS(null, 'fill', '#' + hex_colour);
+            return;
+        }
 
-			//add colour to global namespace data
-			DOT.data.colours[source] = '#' + hex_colour;
+        //add colour to global namespace data
+        DOT.data.colours[source] = '#' + hex_colour;
 
-		}, false);
-	}
+    }, false);
 };
 
 //only called from direct change of input field value - not palette
 updateHexInput = function(evt) {
-	var subval = this.value;
+    var subval = this.value;
 
-	//if empty replace with string '0'
-	if(subval === '') {
-		subval = '0';
-	}
+    //if empty replace with string '0'
+    if(subval === '') {
+        subval = '0';
+    }
 
-	//removes all characters from input except hex 0-9a-f
-	var clean = subval.replace(/[^0-9a-f]/gi,'');
+    //removes all characters from input except hex 0-9a-f
+    var clean = subval.replace(/[^0-9a-f]/gi,'');
 
-	if(clean.length === 0) {
-		clean = '0';
-	}
+    if(clean.length === 0) {
+        clean = '0';
+    }
 
-	//fix greyscale input
-	if(clean.length === 1 || clean.length === 2) {
-		clean = clean + '' + clean + '' + clean;
-	}
+    //fix greyscale input
+    if(clean.length === 1 || clean.length === 2) {
+        clean = clean + '' + clean + '' + clean;
+    }
 
-	//warn of invalid colour value and return
-	if(clean.length === 4 || clean.length === 5) {
-		clean = 'invalid';
-		this.value = clean;
-		return;
-	}
+    //warn of invalid colour value and return
+    if(clean.length === 4 || clean.length === 5) {
+        clean = 'invalid';
+        this.value = clean;
+        return;
+    }
 
-	//only valid hex values proceed past this point
+    //only valid hex values proceed past this point
 
-	//reset input to cleaned hex number
-	this.value = clean;
+    //reset input to cleaned hex number
+    this.value = clean;
 
-	//change border colour of input to the value
-	this.style.border = 'solid 3px #' + clean;
-	
-	//if this is the bgcolour simply change the colour, don't store in data
-	if(this.id === 'bgcolour') {
-		document.getElementById('bg_rect').setAttributeNS(null,'fill','#' + clean);
-		return;
-	}
+    //change border colour of input to the value
+    this.style.border = 'solid 3px #' + clean;
 
-	//add to global namespace data
-	DOT.data.colours[this.id] = '#' + clean;
+    //if this is the bgcolour simply change the colour, don't store in data
+    if(this.id === 'bgcolour') {
+        document.getElementById('bg_rect').setAttributeNS(null,'fill','#' + clean);
+        return;
+    }
+
+    //add to global namespace data
+    DOT.data.colours[this.id] = '#' + clean;
 };
 
 //used to update globabl variables when users change input fields
 updateInput = function(evt) {
-	var subval = this.value;
+    var subval = this.value;
     var svgcanvas = document.getElementById('svgobj');
 
-	//if empty replace with string '0'
-	if(subval === '') {
-		subval = '0';
-	}
-	
-	//removes all characters from input except digits 0-9
-	var clean = parseInt('0' + subval.replace(/[^0-9]/gi,''),10);
+    //if empty replace with string '0'
+    if(subval === '') {
+        subval = '0';
+    }
 
-	switch(this.id) {
-		case 'canvasw':
-			if(clean > DOT.constants.maxCanvasDim) {
-				clean = DOT.constants.maxCanvasDim;
-			}
-			DOT.constants.canvasW = clean;
-			svgcanvas.viewBox.baseVal.width = clean;
-			document.getElementById('bg_rect').setAttributeNS(null, 'width', clean);
-		break;
-		
-		case 'canvash':
-			if(clean > DOT.constants.maxCanvasDim) {
-				clean = DOT.constants.maxCanvasDim;
-			}
-			DOT.constants.canvasH = clean;
-			svgcanvas.viewBox.baseVal.height = clean;
-			document.getElementById('bg_rect').setAttributeNS(null, 'height', clean);
-		break;
+    //removes all characters from input except digits 0-9
+    var clean = parseInt('0' + subval.replace(/[^0-9]/gi,''),10);
 
-		case 'dotmin':
-			DOT.constants.minSize = clean;
-			if(clean > DOT.constants.maxSize) {
-				document.getElementById('dotmax').value = clean;
-				DOT.constants.maxSize = clean;
-				DOT.constants.circleSizes = 0;
-			}
-		break;
+    switch(this.id) {
+        case 'canvasw':
+            if(clean > DOT.constants.maxCanvasDim) {
+                clean = DOT.constants.maxCanvasDim;
+            }
+            DOT.constants.canvasW = clean;
+            svgcanvas.viewBox.baseVal.width = clean;
+            document.getElementById('bg_rect').setAttributeNS(null, 'width', clean);
+            break;
 
-		case 'dotmax':
-			//convert size max input into a range value (max - min)
-			if(clean < DOT.constants.minSize) {
-				clean = DOT.constants.minSize;
-			}
-			
-			DOT.constants.circleSizes = clean - DOT.constants.minSize;
-		break;
+        case 'canvash':
+            if(clean > DOT.constants.maxCanvasDim) {
+                clean = DOT.constants.maxCanvasDim;
+            }
+            DOT.constants.canvasH = clean;
+            svgcanvas.viewBox.baseVal.height = clean;
+            document.getElementById('bg_rect').setAttributeNS(null, 'height', clean);
+            break;
 
-		case 'dotbuf':
-			DOT.constants.buffer = clean;
-		break;
+        case 'dotmin':
+            DOT.constants.minSize = clean;
+            if(clean > DOT.constants.maxSize) {
+                document.getElementById('dotmax').value = clean;
+                DOT.constants.maxSize = clean;
+                DOT.constants.circleSizes = 0;
+            }
+            break;
 
-		case 'brush_width':
-			if(clean < 1) {
-				clean = 1;
-			}
-			DOT.constants.brushWidth = clean;
-		break;
+        case 'dotmax':
+            //convert size max input into a range value (max - min)
+            if(clean < DOT.constants.minSize) {
+                clean = DOT.constants.minSize;
+            }
 
-		case 'brush_leadio':
-			if(clean < 1) {
-				clean = 1;
-			}
-			DOT.constants.brushLeadIO = clean;
-		break;
+            DOT.constants.circleSizes = clean - DOT.constants.minSize;
+            break;
 
-		default:
-			alert('ERROR: updateInput failed!');
-		break;
-	}
+        case 'dotbuf':
+            DOT.constants.buffer = clean;
+            break;
 
-	//update input field with cleaned/changed value
-	this.value = clean;
+        case 'brush_width':
+            if(clean < 1) {
+                clean = 1;
+            }
+            DOT.constants.brushWidth = clean;
+            break;
+
+        case 'brush_leadio':
+            if(clean < 1) {
+                clean = 1;
+            }
+            DOT.constants.brushLeadIO = clean;
+            break;
+
+        default:
+            alert('ERROR: updateInput failed!');
+            break;
+    }
+
+    //update input field with cleaned/changed value
+    this.value = clean;
 };
 
 //delete all the OPTION tags in the SELECT
 deleteZoneOptionTags = function(zone_del) {
-	var select_zone = document.getElementById(zone_del+'del');
-	while(select_zone.children.length > 2) {
-		//stop when only the delall option is left
-		select_zone.removeChild(select_zone.children[2]);
-	}
+    var select_zone = document.getElementById(zone_del+'del');
+    while(select_zone.children.length > 2) {
+        //stop when only the delall option is left
+        select_zone.removeChild(select_zone.children[2]);
+    }
 };
 
 //delete all the shapes in a zone: remove items from menu, DB, and SVG from canvas
 //passed value zone_del must be: z1, z2, or z3
 deleteZoneShapes = function(zone_del) {
-	//delete SVG data
-	var svg_zone = document.getElementById(zone_del);
-	while(svg_zone.childNodes.length > 0) {
-		//stop when no children
-		svg_zone.removeChild(svg_zone.firstChild);
-	}
-	
-	//delete OPTION data from form element
-	deleteZoneOptionTags(zone_del);
+    //delete SVG data
+    var svg_zone = document.getElementById(zone_del);
+    while(svg_zone.childNodes.length > 0) {
+        //stop when no children
+        svg_zone.removeChild(svg_zone.firstChild);
+    }
 
-	//delete data from global data set
-	var sdel;
-	for( shp in DOT.data.shapes ) {
-		sdel = DOT.data.shapes[shp];
-		if(sdel.z === zone_del) {
-			delete DOT.data.shapes[shp];
-		}
-	}
+    //delete OPTION data from form element
+    deleteZoneOptionTags(zone_del);
+
+    //delete data from global data set
+    var sdel;
+    for( shp in DOT.data.shapes ) {
+        sdel = DOT.data.shapes[shp];
+        if(sdel.z === zone_del) {
+            delete DOT.data.shapes[shp];
+        }
+    }
 };
 
 //flashes the SVG shape that the mouse moved over
 flashShape = function(evt) {
-	//gets the option element from Firefox
-	var selection = evt.target;
+    //gets the option element from Firefox
+    var selection = evt.target;
 
-	//if safari it gets the SELECT so get the element differently
-	if(selection.nodeName === 'SELECT') {
-		selection = evt.target[evt.target.selectedIndex];
-	}
+    //if safari it gets the SELECT so get the element differently
+    if(selection.nodeName === 'SELECT') {
+        selection = evt.target[evt.target.selectedIndex];
+    }
 
-	if(selection.nodeName === 'OPTION') {
-		if(selection.id !== 'delall' && selection.id !== '') {
-			document.getElementById('shp_' + selection.id).style.fill = '#8a8';
-			flashit = function() {
-				document.getElementById('shp_' + selection.id).style.fill = '';
-			};
-			setTimeout(flashit, 200);
-		}
-	}
+    if(selection.nodeName === 'OPTION') {
+        if(selection.id !== 'delall' && selection.id !== '') {
+            document.getElementById('shp_' + selection.id).style.fill = '#8a8';
+            flashit = function() {
+                document.getElementById('shp_' + selection.id).style.fill = '';
+            };
+            setTimeout(flashit, 200);
+        }
+    }
 };
 
 //deletes a zone shape from SVG canvas, Dataset, and SELECT form
 deleteShape = function(evt) {
-	var selection = this.options[this.selectedIndex];
+    var selection = this.options[this.selectedIndex];
 
-	//if this is the empty field do nothing and return
-	if(selection.id === '') {
-		return; //nothing selected
-	}
+    //if this is the empty field do nothing and return
+    if(selection.id === '') {
+        return; //nothing selected
+    }
 
-	if(selection.id === 'delall') {
-		//delete all objects in zone
-		deleteZoneShapes(this.id.slice(0,2));
-	} else {
-		//remove OPTION element from SELECT list
-		this.remove(this.selectedIndex);
+    if(selection.id === 'delall') {
+        //delete all objects in zone
+        deleteZoneShapes(this.id.slice(0,2));
+    } else {
+        //remove OPTION element from SELECT list
+        this.remove(this.selectedIndex);
 
-		//remove SVG element
-		var svg_elem = document.getElementById('shp_' + selection.id);
-		var parent_zone = svg_elem.parentNode;
-		parent_zone.removeChild(svg_elem);
+        //remove SVG element
+        var svg_elem = document.getElementById('shp_' + selection.id);
+        var parent_zone = svg_elem.parentNode;
+        parent_zone.removeChild(svg_elem);
 
-		//remove element from global dataset
-		var shape_db_num = selection.id.slice(3);
-		delete DOT.data.shapes[parseInt(shape_db_num,10)];
-	}
+        //remove element from global dataset
+        var shape_db_num = selection.id.slice(3);
+        delete DOT.data.shapes[parseInt(shape_db_num,10)];
+    }
 
-	//select the blank field again
-	this.options[0].selected = true;
+    //select the blank field again
+    this.options[0].selected = true;
 };
 
 //deletes DOTs from the SVG canvas
 deleteDots = function(evt) {
-	var selection = this.options[this.selectedIndex];
+    var selection = this.options[this.selectedIndex];
 
-	//if this is the empty field do nothing and return
-	if(selection.value === '') {
-		return; //nothing selected
-	}
+    //if this is the empty field do nothing and return
+    if(selection.value === '') {
+        return; //nothing selected
+    }
 
-	var zone_to_empty;
-	var zone = selection.value;
+    var zone_to_empty;
+    var zone = selection.value;
 
-	if(selection.value === '-1') {
-		var i;
-		//delete the SVG DOTS for all three zones
-		for(i = 1; i < 4; i++) {
-			zone_to_empty = document.getElementById('dotsz' + i);
-			while(zone_to_empty.childNodes.length > 0) {
-				zone_to_empty.removeChild(zone_to_empty.firstChild);
-			}
-		}
+    if(selection.value === '-1') {
+        var i;
+        //delete the SVG DOTS for all three zones
+        for(i = 1; i < 4; i++) {
+            zone_to_empty = document.getElementById('dotsz' + i);
+            while(zone_to_empty.childNodes.length > 0) {
+                zone_to_empty.removeChild(zone_to_empty.firstChild);
+            }
+        }
 
-		//delete the DOTS from the dataset
-		for(dot in DOT.data.circles) {
-			delete DOT.data.circles[dot];
-		}
-	} else {
-		//delete all the children in the zone
-		//deletes SVG elements
-		zone_to_empty = document.getElementById('dots' + zone);
-		while(zone_to_empty.childNodes.length > 0) {
-			zone_to_empty.removeChild(zone_to_empty.firstChild);
-		}
+        //delete the DOTS from the dataset
+        for(dot in DOT.data.circles) {
+            delete DOT.data.circles[dot];
+        }
+    } else {
+        //delete all the children in the zone
+        //deletes SVG elements
+        zone_to_empty = document.getElementById('dots' + zone);
+        while(zone_to_empty.childNodes.length > 0) {
+            zone_to_empty.removeChild(zone_to_empty.firstChild);
+        }
 
-		//deletes DOTs from dataset
-		for(dot in DOT.data.circles) {
-			if(DOT.data.circles[dot].z === zone) {
-				delete DOT.data.circles[dot];
-			}
-		}
-	}
+        //deletes DOTs from dataset
+        for(dot in DOT.data.circles) {
+            if(DOT.data.circles[dot].z === zone) {
+                delete DOT.data.circles[dot];
+            }
+        }
+    }
 
-	//select blank first value
-	this.options[0].selected = true;
+    //select blank first value
+    this.options[0].selected = true;
 };
 
-dotBlast = function(evt, dots) {
-	var i, dist, xshift, yshift;
-	for( i = 0; i < dots; i++ ) {
-		dist = getRandInt(DOT.constants.brushWidth*DOT.constants.brushLeadValue / DOT.constants.brushLeadIO);
-		xshift = dist*Math.sin(Math.PI*2*i/dots);
-		yshift = dist*Math.cos(Math.PI*2*i/dots);
-		handle_SVG_Canvas_Click(evt, xshift, yshift);
-	}
+DOT.dotBlast = function(evt, dots) {
+    var i, dist, xshift, yshift;
+    for( i = 0; i < dots; i++ ) {
+        dist = getRandInt(DOT.constants.brushWidth*DOT.constants.brushLeadValue / DOT.constants.brushLeadIO);
+        xshift = dist*Math.sin(Math.PI*2*i/dots);
+        yshift = dist*Math.cos(Math.PI*2*i/dots);
+        DOT.SvgCanvasClick(evt, xshift, yshift);
+    }
 };
 
-brushPaint = function(evt) {
-	//if brush width is 1 simply draw a point and return/exit function
-	if(DOT.constants.brushWidth === 1) {
-		switch (evt.type) {
-			case 'click':
-			case 'mousemove':
-				handle_SVG_Canvas_Click(evt, 0, 0);
-			break;
+DOT.brushPaint = function(evt) {
+    // If brush width is 1 simply draw a point and return/exit function
+    if(DOT.constants.brushWidth === 1) {
+        switch (evt.type) {
+            case 'click':
+            case 'mousemove':
+                DOT.SvgCanvasClick(evt, 0, 0);
+                break;
 
-			case 'mouseup':
-				DOT.constants.penMode = false;
-			break;
-		}
-		return;
-	}
+            case 'mouseup':
+                DOT.constants.penMode = false;
+                break;
+        }
+        return;
+    }
 
-	var dots;
+    var dots;
 
-	switch (evt.type) {
-		case 'click':
-			dots = DOT.constants.brushWidth * DOT.constants.brushDensity;
-			dotBlast(evt, dots);
-		break;
+    switch (evt.type) {
+        case 'click':
+            dots = DOT.constants.brushWidth * DOT.constants.brushDensity;
+            DOT.dotBlast(evt, dots);
+            break;
 
-		case 'mousemove':
-			//draw the brush width based on length of stroke (lead in and out)
-			switch (DOT.constants.brushLeadStatus) {
-				case 0:
-					DOT.constants.brushLeadStatus = 1;
-					DOT.constants.brushLeadValue = 0;
-				break;
+        case 'mousemove':
+            //draw the brush width based on length of stroke (lead in and out)
+            switch (DOT.constants.brushLeadStatus) {
+                case 0:
+                    DOT.constants.brushLeadStatus = 1;
+                    DOT.constants.brushLeadValue = 0;
+                    break;
 
-				case 1:
-					//calculate the number of dots based on proportion of leadin complete
-					dots = (DOT.constants.brushWidth*DOT.constants.brushLeadValue / DOT.constants.brushLeadIO) * DOT.constants.brushDensity;
+                case 1:
+                    //calculate the number of dots based on proportion of leadin complete
+                    dots = (DOT.constants.brushWidth*DOT.constants.brushLeadValue / DOT.constants.brushLeadIO) * DOT.constants.brushDensity;
 
-					//draw all the dots
-					dotBlast(evt, dots);
+                    //draw all the dots
+                    DOT.dotBlast(evt, dots);
 
-					//grow the brush size incrementally - when maxed go to next stage
-					if(DOT.constants.brushLeadIO > DOT.constants.brushLeadValue) {
-						DOT.constants.brushLeadValue++;
-					} else {
-						DOT.constants.brushLeadStatus = 2;
-					}
-				break;
+                    //grow the brush size incrementally - when maxed go to next stage
+                    if(DOT.constants.brushLeadIO > DOT.constants.brushLeadValue) {
+                        DOT.constants.brushLeadValue++;
+                    } else {
+                        DOT.constants.brushLeadStatus = 2;
+                    }
+                    break;
 
-				case 2:
-					dots =  DOT.constants.brushWidth * DOT.constants.brushDensity;
-					dotBlast(evt, dots);
-				break;
+                case 2:
+                    dots =  DOT.constants.brushWidth * DOT.constants.brushDensity;
+                    DOT.dotBlast(evt, dots);
+                    break;
 
-				case 3:
-					//calculate the number of dots based on proportion of lead out complete
-					dots = (DOT.constants.brushWidth*DOT.constants.brushLeadValue / DOT.constants.brushLeadIO) * DOT.constants.brushDensity;
-					
-					//draw all the dots
-					dotBlast(evt, dots);
+                case 3:
+                    //calculate the number of dots based on proportion of lead out complete
+                    dots = (DOT.constants.brushWidth*DOT.constants.brushLeadValue / DOT.constants.brushLeadIO) * DOT.constants.brushDensity;
 
-					//shrink the brush size incrementally = when 0 go to stage 0
-					if(DOT.constants.brushLeadValue > 1) {
-						DOT.constants.brushLeadValue--;
-					} else {
-						DOT.constants.brushLeadStatus = 0;
-						DOT.constants.penMode = false;
-					}
-				break;
-					
-				default:
-					alert('An error occured when brushing in function brushPaint.');
-			}
-		break;
+                    //draw all the dots
+                    DOT.dotBlast(evt, dots);
 
-		case 'mouseup':
-			DOT.constants.brushLeadStatus = 3;
-		break;
+                    //shrink the brush size incrementally = when 0 go to stage 0
+                    if(DOT.constants.brushLeadValue > 1) {
+                        DOT.constants.brushLeadValue--;
+                    } else {
+                        DOT.constants.brushLeadStatus = 0;
+                        DOT.constants.penMode = false;
+                    }
+                    break;
 
-		default:
-			alert('error in brushPaint');
-	}
+                default:
+                    alert('An error occured when brushing in function brushPaint.');
+            }
+            break;
+
+        case 'mouseup':
+            DOT.constants.brushLeadStatus = 3;
+            break;
+
+        default:
+            alert('error in brushPaint');
+    }
 };
 
 //Determines whether we are in drawMode or not (edit zone mode), allows correct interaction
-setPenMode = function(evt) {
+DOT.setPenMode = function(evt) {
 
-	
-	
-	//if in drawMode then create circles on click
-	//if in drawMode and shift key pressed draw circles as mouse moves
-	//if in edit zone mode (drawMode === false) then allow the creation of new shapes.
+    //if in drawMode then create circles on click
+    //if in drawMode and shift key pressed draw circles as mouse moves
+    //if in edit zone mode (drawMode === false) then allow the creation of new shapes.
 
-	if(DOT.constants.drawMode === true) {
-		var key;
+    if(DOT.constants.drawMode === true) {
+        var key;
 
-		switch (evt.type) {
-			case 'click':
-				if(DOT.constants.penMode === false) {
-					brushPaint(evt);
-				}
-			break;
+        switch (evt.type) {
+            case 'click':
+                if(DOT.constants.penMode === false) {
+                    DOT.brushPaint(evt);
+                }
+                break;
 
-			case 'mousemove':
-				if(DOT.constants.penMode === true) {
-					brushPaint(evt);
-				}
-			break;
+            case 'mousemove':
+                if(DOT.constants.penMode === true) {
+                    DOT.brushPaint(evt);
+                }
+                break;
 
-			case 'mousedown':
-				DOT.constants.penMode = true;
-			break;
+            case 'mousedown':
+                DOT.constants.penMode = true;
+                break;
 
-			case 'mouseup':
-				if(DOT.constants.penMode === true) {
-					brushPaint(evt);
-				}
-			break;
+            case 'mouseup':
+                if(DOT.constants.penMode === true) {
+                    DOT.brushPaint(evt);
+                }
+                break;
 
-			case 'keydown':
-				key = evt.charCode || evt.keyCode;
-				if(key === 16) {//'shift' key
-					DOT.constants.penMode = true;
-				}
-			break;
+            case 'keydown':
+                key = evt.charCode || evt.keyCode;
+                if(key === 16) {//'shift' key
+                    DOT.constants.penMode = true;
+                }
+                break;
 
-			case 'keyup':
-				key = evt.charCode || evt.keyCode;
-				if(key === 16) {
-					DOT.constants.penMode = false;
-				}
-			break;
-		}
-	}
+            case 'keyup':
+                key = evt.charCode || evt.keyCode;
+                if(key === 16) {
+                    DOT.constants.penMode = false;
+                }
+                break;
+        }
+    }
 };
 
-//allows the clicking and dragging on canvase to create new shapes (rect or cirlce)
-handleZoneEdit = function(evt) {
+// Allows the clicking and dragging on the canvas to createnew shapes (rect or cirlce)
+DOT.handleZoneEdit = function(evt) {
 
-	evt.preventDefault();
+    evt.preventDefault();
 
-	//if in edit zone mode (drawMode === false) than allow the creation of new shapes.
-	if(DOT.constants.drawMode === false) {
+    //if in edit zone mode (drawMode === false) than allow the creation of new shapes.
+    if(DOT.constants.drawMode === false) {
 
-		var new_shape;
+        var new_shape;
 
-		//In zone shapes edit mode - create new shapes
-		switch(evt.type) {
-			case 'mousedown':
-				//check if a shape already in creation exists do not start creating a new one 
-				if(document.getElementById('new_shape_temp')) {
-					return;
-				}
+        //In zone shapes edit mode - create new shapes
+        switch(evt.type) {
+            case 'mousedown':
+                //check if a shape already in creation exists do not start creating a new one 
+                if(document.getElementById('new_shape_temp')) {
+                    return;
+                }
 
-				//catch the X,Y mouse location
-				DOT.constants.shapeCreation = {};
-				DOT.constants.shapeCreation.xOrig = evt.clientX - DOT.constants.svgOffsetX + window.pageXOffset;
-				DOT.constants.shapeCreation.yOrig = evt.clientY - DOT.constants.svgOffsetY + window.pageYOffset;
+                //catch the X,Y mouse location
+                DOT.constants.shapeCreation = {};
+                DOT.constants.shapeCreation.xOrig = evt.clientX - DOT.constants.svgOffsetX + window.pageXOffset;
+                DOT.constants.shapeCreation.yOrig = evt.clientY - DOT.constants.svgOffsetY + window.pageYOffset;
 
-				var i, zone_t, shp_t;
-				//check the six radio buttons and see which one is checked
-				for( i = 1; i < 4; i++ ) {
-					if(document.getElementById('z' + i + 'c').checked === true) {
-						
-						shp_t = 'c';
-						zone_t = i;
-						new_shape = document.createElementNS(DOT.constants.svgNS, "circle");
-						new_shape.setAttributeNS(null, 'cx', DOT.constants.shapeCreation.xOrig);
-						new_shape.setAttributeNS(null, 'cy', DOT.constants.shapeCreation.yOrig);
-						new_shape.setAttributeNS(null, 'r', 10);
+                var i, zone_t, shp_t;
+                //check the six radio buttons and see which one is checked
+                for( i = 1; i < 4; i++ ) {
+                    if(document.getElementById('z' + i + 'c').checked === true) {
 
-					} else if(document.getElementById('z' + i + 'r').checked === true) {
-					
-						shp_t = 'r';
-						zone_t = i;
-						new_shape = document.createElementNS(DOT.constants.svgNS, "rect");
-						new_shape.setAttributeNS(null, 'x', DOT.constants.shapeCreation.xOrig);
-						new_shape.setAttributeNS(null, 'y', DOT.constants.shapeCreation.yOrig);
-						new_shape.setAttributeNS(null, 'width', 10);
-						new_shape.setAttributeNS(null, 'height', 10);
-					}
-				}
+                        shp_t = 'c';
+                        zone_t = i;
+                        new_shape = document.createElementNS(DOT.constants.svgNS, "circle");
+                        new_shape.setAttributeNS(null, 'cx', DOT.constants.shapeCreation.xOrig);
+                        new_shape.setAttributeNS(null, 'cy', DOT.constants.shapeCreation.yOrig);
+                        new_shape.setAttributeNS(null, 'r', 10);
 
-				new_shape.setAttributeNS(null, 'stroke', 'black');
-				new_shape.setAttributeNS(null, 'fill', 'none');
-				new_shape.setAttributeNS(null, 'id', 'new_shape_temp');
-				
-				DOT.constants.shapeCreation.type = shp_t;
-				DOT.constants.shapeCreation.zone = zone_t;
+                    } else if(document.getElementById('z' + i + 'r').checked === true) {
 
-				//Add shape to svg canvas
-				document.getElementById('svgobj').appendChild(new_shape);
-			break;
+                        shp_t = 'r';
+                        zone_t = i;
+                        new_shape = document.createElementNS(DOT.constants.svgNS, "rect");
+                        new_shape.setAttributeNS(null, 'x', DOT.constants.shapeCreation.xOrig);
+                        new_shape.setAttributeNS(null, 'y', DOT.constants.shapeCreation.yOrig);
+                        new_shape.setAttributeNS(null, 'width', 10);
+                        new_shape.setAttributeNS(null, 'height', 10);
+                    }
+                }
 
-			case 'mousemove':
-				//if actively creating shape
+                new_shape.setAttributeNS(null, 'stroke', 'black');
+                new_shape.setAttributeNS(null, 'fill', 'none');
+                new_shape.setAttributeNS(null, 'id', 'new_shape_temp');
 
-				if(DOT.constants.shapeCreation) {
-					//resize shape
-					//get new mouse coordinates
-					var nx = evt.clientX - DOT.constants.svgOffsetX + window.pageXOffset;
-					var ny = evt.clientY - DOT.constants.svgOffsetY + window.pageYOffset;
+                DOT.constants.shapeCreation.type = shp_t;
+                DOT.constants.shapeCreation.zone = zone_t;
 
-					new_shape = document.getElementById('new_shape_temp');
+                //Add shape to svg canvas
+                document.getElementById('svgobj').appendChild(new_shape);
+                break;
 
-					if(DOT.constants.shapeCreation.type === 'c') {
-						//Circle Radius Edit
-						new_shape.setAttributeNS(null,'r', parseInt(calcDistance(nx, ny, DOT.constants.shapeCreation.xOrig, DOT.constants.shapeCreation.yOrig),10));
-					} else {
-						//Rectangle Shape Edit
-						//depending on mouse location change x,y and width/height or only width/height.
-						if(nx < DOT.constants.shapeCreation.xOrig) {
-							new_shape.setAttributeNS(null,'width', DOT.constants.shapeCreation.xOrig - nx);
-							new_shape.setAttributeNS(null,'x', nx);
-						} else {
-							new_shape.setAttributeNS(null,'width', nx - DOT.constants.shapeCreation.xOrig);
-						}
+            case 'mousemove':
+                //if actively creating shape
 
-						if(ny < DOT.constants.shapeCreation.yOrig) {
-							new_shape.setAttributeNS(null,'height', DOT.constants.shapeCreation.yOrig - ny);
-							new_shape.setAttributeNS(null,'y', ny);
-						} else {
-							new_shape.setAttributeNS(null,'height', ny - DOT.constants.shapeCreation.yOrig);
-						}
-					}
-				}
-			break;
-			
-			case 'mouseup':
-			case 'click': //equivalent to up
-			default:
-				if(DOT.constants.shapeCreation) {
+                if(DOT.constants.shapeCreation) {
+                    //resize shape
+                    //get new mouse coordinates
+                    var nx = evt.clientX - DOT.constants.svgOffsetX + window.pageXOffset;
+                    var ny = evt.clientY - DOT.constants.svgOffsetY + window.pageYOffset;
 
-					//move to correct target zone and format correctly
-					new_shape = document.getElementById('new_shape_temp');
+                    new_shape = document.getElementById('new_shape_temp');
 
-					new_shape.setAttributeNS(null, 'stroke', '');
-					new_shape.setAttributeNS(null, 'fill', '');
-					new_shape.setAttributeNS(null, 'id', '');
-					
-					//put the shape in its home in the correct zone graphic element
-					document.getElementById('z' + DOT.constants.shapeCreation.zone).appendChild(new_shape);
+                    if(DOT.constants.shapeCreation.type === 'c') {
+                        //Circle Radius Edit
+                        new_shape.setAttributeNS(null,'r', parseInt(calcDistance(nx, ny, DOT.constants.shapeCreation.xOrig, DOT.constants.shapeCreation.yOrig),10));
+                    } else {
+                        //Rectangle Shape Edit
+                        //depending on mouse location change x,y and width/height or only width/height.
+                        if(nx < DOT.constants.shapeCreation.xOrig) {
+                            new_shape.setAttributeNS(null,'width', DOT.constants.shapeCreation.xOrig - nx);
+                            new_shape.setAttributeNS(null,'x', nx);
+                        } else {
+                            new_shape.setAttributeNS(null,'width', nx - DOT.constants.shapeCreation.xOrig);
+                        }
 
-					//adds new shape to DB
-					getZoneShapes();
+                        if(ny < DOT.constants.shapeCreation.yOrig) {
+                            new_shape.setAttributeNS(null,'height', DOT.constants.shapeCreation.yOrig - ny);
+                            new_shape.setAttributeNS(null,'y', ny);
+                        } else {
+                            new_shape.setAttributeNS(null,'height', ny - DOT.constants.shapeCreation.yOrig);
+                        }
+                    }
+                }
+                break;
 
-					//deletes all the shapes from the deletion list
-					deleteZoneOptionTags('z1');
-					deleteZoneOptionTags('z2');
-					deleteZoneOptionTags('z3');
+            case 'mouseup':
+            case 'click': //equivalent to up
+            default:
+                if(DOT.constants.shapeCreation) {
 
-					//recreate a list for the deletion form of all the shapes in the DB
-					setShapeForm();
+                    //move to correct target zone and format correctly
+                    new_shape = document.getElementById('new_shape_temp');
 
-					//delete data
-					delete DOT.constants.shapeCreation;
+                    new_shape.setAttributeNS(null, 'stroke', '');
+                    new_shape.setAttributeNS(null, 'fill', '');
+                    new_shape.setAttributeNS(null, 'id', '');
 
-				}
-			break;
-		}
-	}
+                    //put the shape in its home in the correct zone graphic element
+                    document.getElementById('z' + DOT.constants.shapeCreation.zone).appendChild(new_shape);
+
+                    //adds new shape to DB
+                    getZoneShapes();
+
+                    //deletes all the shapes from the deletion list
+                    deleteZoneOptionTags('z1');
+                    deleteZoneOptionTags('z2');
+                    deleteZoneOptionTags('z3');
+
+                    //recreate a list for the deletion form of all the shapes in the DB
+                    setShapeForm();
+
+                    //delete data
+                    delete DOT.constants.shapeCreation;
+
+                }
+                break;
+        }
+    }
 };
 
 DOT.setEventListeners = function() {
 
-	//get the target zone in the SVG element
-	let target = document.getElementById('targetZone');
+    //get the target zone in the SVG element
+    let target = document.getElementById('targetZone');
 
-	//give zone 'clickability' to add DOTs manually
-	if(target.addEventListener) {
-		target.addEventListener("click", setPenMode, false);
-		target.addEventListener("mousemove", setPenMode, false);
-		target.addEventListener("mouseup", setPenMode, false);
-		target.addEventListener("mousedown", setPenMode, false);
-	}
+    //give zone 'clickability' to add DOTs manually
+    target.addEventListener("click", DOT.setPenMode, false);
+    target.addEventListener("mousemove", DOT.setPenMode, false);
+    target.addEventListener("mouseup", DOT.setPenMode, false);
+    target.addEventListener("mousedown", DOT.setPenMode, false);
 
-	// Get the whole svg zone
-	let SVGobject = document.getElementById('svgobj');
-	//give the svgobj object clickability
-	if(SVGobject.addEventListener) {
-		SVGobject.addEventListener("mousedown", handleZoneEdit, false);
-		SVGobject.addEventListener("mousemove", handleZoneEdit, false);
-		SVGobject.addEventListener("mouseup", handleZoneEdit, false);
+    // Get the whole svg zone
+    let SVGobject = document.getElementById('svgobj');
+    //give the svgobj object clickability
+    SVGobject.addEventListener("mousedown", DOT.handleZoneEdit, false);
+    SVGobject.addEventListener("mousemove", DOT.handleZoneEdit, false);
+    SVGobject.addEventListener("mouseup", DOT.handleZoneEdit, false);
 
-		//note the below points to setPenMode
-		SVGobject.addEventListener("mouseup", setPenMode, false);
-	}
+    //note the below points to setPenMode
+    SVGobject.addEventListener("mouseup", DOT.setPenMode, false);
 
-	//give shift key - pen dotify ability
-	if(document.addEventListener) {
-		document.addEventListener("keydown", setPenMode, false);
-		document.addEventListener("keyup", setPenMode, false);
-	}
+    //give shift key - pen dotify ability
+    document.addEventListener("keydown", DOT.setPenMode, false);
+    document.addEventListener("keyup", DOT.setPenMode, false);
 
-	//get canvas width from inputs
-	var canv_w = document.getElementById('canvasw');
-	if(canv_w.addEventListener) {
-		canv_w.addEventListener("change", updateInput, false);
-	}
+    // Listen for page/browser resize or scroll
+    window.addEventListener('resize', DOT.getCanvasProperties);
+    window.addEventListener('scroll', DOT.getCanvasProperties);
 
-	//get canvas height from inputs
-	var canv_h = document.getElementById('canvash');
-	if(canv_h.addEventListener) {
-		canv_h.addEventListener("change", updateInput, false);
-	}
+    //get canvas width from inputs
+    var canv_w = document.getElementById('canvasw');
+    canv_w.addEventListener("change", updateInput, false);
 
-	//get DOT sizes from inputs
-	var dmin = document.getElementById('dotmin');
-	if(dmin.addEventListener) {
-		dmin.addEventListener("change", updateInput, false);
-	}
+    //get canvas height from inputs
+    var canv_h = document.getElementById('canvash');
+    canv_h.addEventListener("change", updateInput, false);
 
-	//get DOT max size from inputs
-	var dmax = document.getElementById('dotmax');
-	if(dmax.addEventListener) {
-		dmax.addEventListener("change", updateInput, false);
-	}
+    //get DOT sizes from inputs
+    var dmin = document.getElementById('dotmin');
+    dmin.addEventListener("change", updateInput, false);
 
-	//get DOT buffer size from inputs
-	var bufval = document.getElementById('dotbuf');
-	if(bufval.addEventListener) {
-		bufval.addEventListener("change", updateInput, false);
-	}
+    //get DOT max size from inputs
+    var dmax = document.getElementById('dotmax');
+    dmax.addEventListener("change", updateInput, false);
 
-	var brush_width = document.getElementById('brush_width');
-	if(brush_width.addEventListener) {
-		brush_width.addEventListener("change", updateInput, false);
-	}
+    //get DOT buffer size from inputs
+    var bufval = document.getElementById('dotbuf');
+    bufval.addEventListener("change", updateInput, false);
 
-	var brush_leadio = document.getElementById('brush_leadio');
-	if(brush_leadio.addEventListener) {
-		brush_leadio.addEventListener("change", updateInput, false);
-	}
+    var brush_width = document.getElementById('brush_width');
+    brush_width.addEventListener("change", updateInput, false);
 
-	//hide/show the zone target shapes from SVG-canvas
-	var togtar = document.getElementById('toggle_targets');
-	if(togtar.addEventListener) {
-		togtar.addEventListener("change", toggleTargetVis, false);
-	}
+    var brush_leadio = document.getElementById('brush_leadio');
+    brush_leadio.addEventListener("change", updateInput, false);
 
-	//dis/allow DOT overlap
-	var dot_overlap = document.getElementById('allow_overlap');
-	if(dot_overlap) {
-		dot_overlap.addEventListener("change", toggleOverlap, false);
-	}
+    //hide/show the zone target shapes from SVG-canvas
+    var togtar = document.getElementById('toggle_targets');
+    togtar.addEventListener("change", toggleTargetVis, false);
 
-	//delete dots in zones
-	var deldot_select = document.getElementById('deldots');
-	if(deldot_select.addEventListener) {
-		deldot_select.addEventListener("change", deleteDots, false);
-	}
+    //dis/allow DOT overlap
+    var dot_overlap = document.getElementById('allow_overlap');
+    dot_overlap.addEventListener("change", toggleOverlap, false);
 
-	//update background colour of SVG canvas
-	var bgcolour = document.getElementById('bgcolour');
-	if(bgcolour.addEventListener) {
-		bgcolour.addEventListener("change", updateHexInput, false);
-	}
+    //delete dots in zones
+    var deldot_select = document.getElementById('deldots');
+    deldot_select.addEventListener("change", deleteDots, false);
 
-	var i, j;
-	i = j = 1;
-	var clr_in;
-	for( i = 1; i < 4; i++ ) {
-		for( j = 1; j < 4; j++ ) {
-			if(!(clr_in = document.getElementById('z' + i + 'c' + j))) {
-				alert('ERROR: Cannot find the id z' + i + 'c' + j + '!');
-			}
-			if(clr_in.addEventListener) {
-				clr_in.addEventListener("change", updateHexInput, false);
-			}
-		}
-	}
+    //update background colour of SVG canvas
+    var bgcolour = document.getElementById('bgcolour');
+    bgcolour.addEventListener("change", updateHexInput, false);
 
-	//set Zone Shape select dropdown listeners to delete shapes
-	//var i; //already defined
-	for( i = 1; i < 4; i++ ) {
-		var shp_del = document.getElementById('z' + i + 'del');
-		if(shp_del.addEventListener) {
-			shp_del.addEventListener("mouseover", flashShape, false);
-			shp_del.addEventListener("change", deleteShape, false);
-		}
-	}
+    var i, j;
+    i = j = 1;
+    var clr_in;
+    for( i = 1; i < 4; i++ ) {
+        for( j = 1; j < 4; j++ ) {
+            if(!(clr_in = document.getElementById('z' + i + 'c' + j))) {
+                alert('ERROR: Cannot find the id z' + i + 'c' + j + '!');
+            }
+            clr_in.addEventListener("change", updateHexInput, false);
+        }
+    }
+
+    //set Zone Shape select dropdown listeners to delete shapes
+    for( i = 1; i < 4; i++ ) {
+        var shp_del = document.getElementById('z' + i + 'del');
+        shp_del.addEventListener("mouseover", flashShape, false);
+        shp_del.addEventListener("change", deleteShape, false);
+    }
 };
 
 //scan the SVG canvas and store the results
-getCanvasProperties = function() {
-	//div holder element of SVG (cannot get location property of SVG element)
-	var svg_container = document.getElementById('svgPkg');
+DOT.getCanvasProperties = function() {
+    console.log('getting canvas properties');
+    var svg_elem = document.getElementById('svgobj');
 
-	//find the x,y coordinates of the svg canvas
-	var loc = findObj(svg_container);
+    // x,y of svg canvas
+    DOT.constants.svgOffsetX = svg_elem.getBoundingClientRect().left;
+    DOT.constants.svgOffsetY = svg_elem.getBoundingClientRect().top;
 
-	//assign locations to global variable
-	DOT.constants.svgOffsetX = parseInt(loc[0], 10);
-	DOT.constants.svgOffsetY = parseInt(loc[1], 10);
+    //get the SVG canvas size
+    DOT.constants.canvasW = svg_elem.viewBox.baseVal.width;
+    DOT.constants.canvasH = svg_elem.viewBox.baseVal.height;
 
-	//actual SVG element properties
-	var svg_elem = document.getElementById('svgobj');
+    // get the scale between svg units and screen size
+    DOT.constants.rescale = svg_elem.viewBox.baseVal.width / svg_elem.clientWidth;
 
-	//get the SVG canvas size
-	DOT.constants.canvasW = svg_elem.viewBox.baseVal.width;
-	DOT.constants.canvasH = svg_elem.viewBox.baseVal.height;
+    //get the default zone colours from inputs
+    var i, j, clr_id;
+    i = j = 1;
 
-	//get the default zone colours from inputs
-	var i, j, clr_id;
-	i = j = 1;
+    for( i = 1; i < 4; i++ ) {
+        for( j = 1; j < 4; j++ ) {
+            //construct id format
+            clr_id = 'z' + i + 'c' + j;
 
-	for( i = 1; i < 4; i++ ) {
-		for( j = 1; j < 4; j++ ) {
-			//construct id format
-			clr_id = 'z' + i + 'c' + j;
+            //get colour element
+            clr_elem = document.getElementById(clr_id);
 
-			//get colour element
-			clr_elem = document.getElementById(clr_id);
+            //put value in data set
+            DOT.data.colours[clr_id] = '#' + clr_elem.value;
 
-			//put value in data set
-			DOT.data.colours[clr_id] = '#' + clr_elem.value;
-
-			//update border of input according to value
-			clr_elem.style.border = 'solid 3px #' + clr_elem.value;
-		}
-	}
+            //update border of input according to value
+            clr_elem.style.border = 'solid 3px #' + clr_elem.value;
+        }
+    }
 };
 
 //read in the default values of the form and put them in the global data set
 getFormDefaults = function() {
-	//get min circle size value
-	var min = parseInt(document.getElementById('dotmin').value, 10);
-	DOT.constants.minSize = min;
-	
-	//get circle range value
-	DOT.constants.circleSizes = parseInt(document.getElementById('dotmax').value - min, 10);
+    //get min circle size value
+    var min = parseInt(document.getElementById('dotmin').value, 10);
+    DOT.constants.minSize = min;
 
-	//get buffer value
-	DOT.constants.buffer = parseInt(document.getElementById('dotbuf').value, 10);
+    //get circle range value
+    DOT.constants.circleSizes = parseInt(document.getElementById('dotmax').value - min, 10);
 
-	//get the brush width and lead in/out
-	DOT.constants.brushWidth = parseInt(document.getElementById('brush_width').value, 10);
-	DOT.constants.brushLeadIO = parseInt(document.getElementById('brush_leadio').value, 10);
+    //get buffer value
+    DOT.constants.buffer = parseInt(document.getElementById('dotbuf').value, 10);
+
+    //get the brush width and lead in/out
+    DOT.constants.brushWidth = parseInt(document.getElementById('brush_width').value, 10);
+    DOT.constants.brushLeadIO = parseInt(document.getElementById('brush_leadio').value, 10);
 };
 
 //reads shape data and adds elements to shape removal form
 setShapeForm = function() {
-	var shape;
-	var form_del;
-	var new_option;
+    var shape;
+    var form_del;
+    var new_option;
 
-	for(shp in DOT.data.shapes) {
-		shape = DOT.data.shapes[shp];
-		form_del = document.getElementById(shape.z + 'del');
-		new_option = document.createElement('option');
-		new_option.value = shp;
-		new_option.id = shape.z + '' + shape.type + '' + shp;
-		if(shape.type === "c") {
-			new_option.innerHTML = 'Circle' + shp;
-		} else {
-			new_option.innerHTML = 'Rectangle' + shp;
-		}
-		form_del.appendChild(new_option);
-	}
+    for(shp in DOT.data.shapes) {
+        shape = DOT.data.shapes[shp];
+        form_del = document.getElementById(shape.z + 'del');
+        new_option = document.createElement('option');
+        new_option.value = shp;
+        new_option.id = shape.z + '' + shape.type + '' + shp;
+        if(shape.type === "c") {
+            new_option.innerHTML = 'Circle' + shp;
+        } else {
+            new_option.innerHTML = 'Rectangle' + shp;
+        }
+        form_del.appendChild(new_option);
+    }
 };
 
 //creates a background rect for zone 1
 makeBGRect = function() {
-	//create SVG shape and add to zone1
-	new_shape = document.createElementNS(DOT.constants.svgNS, "rect");
-	new_shape.setAttributeNS(null, 'x', 0);
-	new_shape.setAttributeNS(null, 'y', 0);
-	new_shape.setAttributeNS(null, 'width', DOT.constants.canvasW);
-	new_shape.setAttributeNS(null, 'height', DOT.constants.canvasH);
-	new_shape.setAttributeNS(null, 'dot', 'x');
-	new_shape.setAttributeNS(null, 'id', 'shp_z1r' + DOT.data.shp_count);
-				
-	//Add rect to svg canvas
-	document.getElementById('z1').appendChild(new_shape);
+    //create SVG shape and add to zone1
+    new_shape = document.createElementNS(DOT.constants.svgNS, "rect");
+    new_shape.setAttributeNS(null, 'x', 0);
+    new_shape.setAttributeNS(null, 'y', 0);
+    new_shape.setAttributeNS(null, 'width', DOT.constants.canvasW);
+    new_shape.setAttributeNS(null, 'height', DOT.constants.canvasH);
+    new_shape.setAttributeNS(null, 'dot', 'x');
+    new_shape.setAttributeNS(null, 'id', 'shp_z1r' + DOT.data.shp_count);
 
-	//add data to DOT.data.shapes
-	DOT.data.shapes[DOT.data.shp_count] = {
-		z: 'z1',
-		type: 'r',
-		x: 0,
-		y: 0,
-		w: DOT.constants.canvasW,
-		h: DOT.constants.canvasH
-	};
+    //Add rect to svg canvas
+    document.getElementById('z1').appendChild(new_shape);
 
-	DOT.data.shp_count++;
+    //add data to DOT.data.shapes
+    DOT.data.shapes[DOT.data.shp_count] = {
+        z: 'z1',
+        type: 'r',
+        x: 0,
+        y: 0,
+        w: DOT.constants.canvasW,
+        h: DOT.constants.canvasH
+    };
 
-	//deletes all the shapes from the deletion list
-	deleteZoneOptionTags('z1');
-	deleteZoneOptionTags('z2');
-	deleteZoneOptionTags('z3');
+    DOT.data.shp_count++;
 
-	//add to deletion form
-	setShapeForm();
+    //deletes all the shapes from the deletion list
+    deleteZoneOptionTags('z1');
+    deleteZoneOptionTags('z2');
+    deleteZoneOptionTags('z3');
+
+    //add to deletion form
+    setShapeForm();
 };
 
 //parse SVG and add shapes to DOT.data.shapes data set
 getZoneShapes = function() {
-	//get the 'g' element holding the shapes for each zone
-	var zone, children, i, shape, svg_z;
+    //get the 'g' element holding the shapes for each zone
+    var zone, children, i, shape, svg_z;
 
-	svg_z = {
-		z1: document.getElementById('z1'),
-		z2: document.getElementById('z2'),
-		z3: document.getElementById('z3')
-	};
-	
-	//for each zone...
-	for(zone in svg_z) {
+    svg_z = {
+        z1: document.getElementById('z1'),
+        z2: document.getElementById('z2'),
+        z3: document.getElementById('z3')
+    };
 
-		//svg_z[zone] is zone element
-		child_count= svg_z[zone].childNodes.length;
+    //for each zone...
+    for(zone in svg_z) {
 
-		//for each child of the zone...
-		for(i = 0; i < child_count; i++) {
+        //svg_z[zone] is zone element
+        child_count= svg_z[zone].childNodes.length;
 
-			//shape holds the actually SVG shape
-			shape = svg_z[zone].childNodes[i];
-			
-			//copy info from SVG shape into DOT data set
-			if(shape.getAttributeNS(null,'dot') === 'x') {
-				// DO NOTHING - shape already recorded
-			} else if(shape.nodeName === 'rect') {
-				//RECTANGLE
-				DOT.data.shapes[DOT.data.shp_count] = {
-					z: svg_z[zone].id,
-					type: 'r',
-					x: parseInt(shape.getAttributeNS(null,'x'),10),
-					y: parseInt(shape.getAttributeNS(null,'y'),10),
-					w: parseInt(shape.getAttributeNS(null,'width'),10),
-					h: parseInt(shape.getAttributeNS(null,'height'),10)
-				};
+        //for each child of the zone...
+        for(i = 0; i < child_count; i++) {
 
-				shape.setAttributeNS(null,'dot','x');
-				DOT.data.shp_count = DOT.data.shp_count + 1;
-			} else if (shape.nodeName === 'circle') {
-				//CIRCLE
-				DOT.data.shapes[DOT.data.shp_count] = {
-					z: svg_z[zone].id,
-					type: 'c',
-					x: parseInt(shape.getAttributeNS(null,'cx'),10),
-					y: parseInt(shape.getAttributeNS(null,'cy'),10),
-					r: parseInt(shape.getAttributeNS(null,'r'),10)
-				};
+            //shape holds the actually SVG shape
+            shape = svg_z[zone].childNodes[i];
 
-				shape.setAttributeNS(null,'dot','x');
-				DOT.data.shp_count = DOT.data.shp_count + 1;
-			} else {
-				alert('ERROR: a shape object of unexpected form was encountered in your SVG graphic!');
-			}
+            //copy info from SVG shape into DOT data set
+            if(shape.getAttributeNS(null,'dot') === 'x') {
+                // DO NOTHING - shape already recorded
+            } else if(shape.nodeName === 'rect') {
+                //RECTANGLE
+                DOT.data.shapes[DOT.data.shp_count] = {
+                    z: svg_z[zone].id,
+                    type: 'r',
+                    x: parseInt(shape.getAttributeNS(null,'x'),10),
+                    y: parseInt(shape.getAttributeNS(null,'y'),10),
+                    w: parseInt(shape.getAttributeNS(null,'width'),10),
+                    h: parseInt(shape.getAttributeNS(null,'height'),10)
+                };
 
-			//if the SVG shape doesn't have an id already - give it one!
-			if(!shape.id) {
-				shape.id = 'shp_' + zone + '' + DOT.data.shapes[DOT.data.shp_count-1].type + '' + (DOT.data.shp_count - 1);
-			}
-		}
-	}
+                shape.setAttributeNS(null,'dot','x');
+                DOT.data.shp_count = DOT.data.shp_count + 1;
+            } else if (shape.nodeName === 'circle') {
+                //CIRCLE
+                DOT.data.shapes[DOT.data.shp_count] = {
+                    z: svg_z[zone].id,
+                    type: 'c',
+                    x: parseInt(shape.getAttributeNS(null,'cx'),10),
+                    y: parseInt(shape.getAttributeNS(null,'cy'),10),
+                    r: parseInt(shape.getAttributeNS(null,'r'),10)
+                };
+
+                shape.setAttributeNS(null,'dot','x');
+                DOT.data.shp_count = DOT.data.shp_count + 1;
+            } else {
+                alert('ERROR: a shape object of unexpected form was encountered in your SVG graphic!');
+            }
+
+            //if the SVG shape doesn't have an id already - give it one!
+            if(!shape.id) {
+                shape.id = 'shp_' + zone + '' + DOT.data.shapes[DOT.data.shp_count-1].type + '' + (DOT.data.shp_count - 1);
+            }
+        }
+    }
 };
 
 // Test for collision between coordinates and all shapes in data set
 zoneCollision = function(x, y) {
 
-	var dshp;
-	zone_hits = { z1: 0, z2: 0, z3: 0 };
+    var dshp;
+    zone_hits = { z1: 0, z2: 0, z3: 0 };
 
-	// go through each shape in DOT.data.shapes
-	for(shape in DOT.data.shapes) {
+    // go through each shape in DOT.data.shapes
+    for(shape in DOT.data.shapes) {
 
-		// get shape object
-		dshp = DOT.data.shapes[shape];
+        // get shape object
+        dshp = DOT.data.shapes[shape];
 
-		if(dshp.type === 'r') {
-			if(x > dshp.x && x < (dshp.x + dshp.w) && y > dshp.y && y < (dshp.y + dshp.h)) {
-				// coordinates are inside this rectangle
-				zone_hits[dshp.z] = zone_hits[dshp.z] + 1;
-			}
-		} else if (dshp.type === 'c') {
-			if(calcDistance(x, y, dshp.x, dshp.y) < dshp.r) {
-				// coordinates are inside this circle
-				zone_hits[dshp.z] = zone_hits[dshp.z] + 1;
-			}
-		} else {
-			alert('ERROR: Unknown shape type in shape data set!');
-		}
-	}
+        if(dshp.type === 'r') {
+            if(x > dshp.x && x < (dshp.x + dshp.w) && y > dshp.y && y < (dshp.y + dshp.h)) {
+                // coordinates are inside this rectangle
+                zone_hits[dshp.z] = zone_hits[dshp.z] + 1;
+            }
+        } else if (dshp.type === 'c') {
+            if(calcDistance(x, y, dshp.x, dshp.y) < dshp.r) {
+                // coordinates are inside this circle
+                zone_hits[dshp.z] = zone_hits[dshp.z] + 1;
+            }
+        } else {
+            alert('ERROR: Unknown shape type in shape data set!');
+        }
+    }
 
     console.log(x,y,zone_hits);
 
-	//although we count the number of hits in each zone we do not use it - only 1 is necessary
-	if(zone_hits.z3 > 0) {
-		return 'z3';
-	} else if (zone_hits.z2 > 0) {
-		return 'z2';
-	} else if (zone_hits.z1 > 0) {
-		return 'z1';
-	} else {
-		return 'none';
-	}
+    //although we count the number of hits in each zone we do not use it - only 1 is necessary
+    if(zone_hits.z3 > 0) {
+        return 'z3';
+    } else if (zone_hits.z2 > 0) {
+        return 'z2';
+    } else if (zone_hits.z1 > 0) {
+        return 'z1';
+    } else {
+        return 'none';
+    }
 };
 
 // Do the main 'dotifying' action
 DOT.dotify = function() {
 
-	let iter = 0;
-	let dot_status = document.getElementById('dotifycomp');
-	let cycles = parseInt(document.getElementById('dotnum').value, 10);
-	if(isNaN(cycles)) { cycles = 1; }
+    let iter = 0;
+    let dot_status = document.getElementById('dotifycomp');
+    let cycles = parseInt(document.getElementById('dotnum').value, 10);
+    if(isNaN(cycles)) { cycles = 1; }
 
-	// This will be called by setTimeout
-	let dotit = function () {
+    // This will be called by setTimeout
+    let dotit = function () {
 
-		// get a random location
-		var x = getRandInt(DOT.constants.canvasW);
-		var y = getRandInt(DOT.constants.canvasH);
+        // get a random location
+        var x = getRandInt(DOT.constants.canvasW);
+        var y = getRandInt(DOT.constants.canvasH);
 
-		//check which zone the coordinates fall starting at the highest, zone3, to zone1, the lowest.
-		zone_hit = zoneCollision(x, y);
+        //check which zone the coordinates fall starting at the highest, zone3, to zone1, the lowest.
+        zone_hit = zoneCollision(x, y);
 
-		//if zone_hit is 'none' do not draw circle
-		if(zone_hit === 'none') {
-			//do not draw circle
-		} else {
-			//hook into same function as mouse click
-			createCircle(DOT.data.colours[zone_hit + 'c' + getRandInt(3)], getRandCircleSize(), x, y, zone_hit);
-			dot_status.innerHTML = parseInt((iter/cycles)*100,10) + '%';
-		}
+        //if zone_hit is 'none' do not draw circle
+        if(zone_hit === 'none') {
+            //do not draw circle
+        } else {
+            //hook into same function as mouse click
+            createCircle(DOT.data.colours[zone_hit + 'c' + getRandInt(3)], getRandCircleSize(), x, y, zone_hit);
+            dot_status.innerHTML = parseInt((iter/cycles)*100,10) + '%';
+        }
 
-		//if we still have more circles to draw
-		if(iter < cycles) {
-			iter = iter + 1;
-			setTimeout(dotit, 0);
-		} else {
-			dot_status.innerHTML = 'Complete';
-		}
-	};
+        //if we still have more circles to draw
+        if(iter < cycles) {
+            iter = iter + 1;
+            setTimeout(dotit, 0);
+        } else {
+            dot_status.innerHTML = 'Complete';
+        }
+    };
 
-	setTimeout(dotit, 0);
+    setTimeout(dotit, 0);
 };
 
 //creates the SVG text output for export
 dotExport = function() {
-	
-	var tarea = document.getElementById('export_ta');
-	tarea.style.visibility = 'visible';
-	tarea.style.display = 'block';
-	var newtext, shp;
 
-	newtext = "<svg xmlns='http://www.w3.org/2000/svg' width='" + DOT.constants.canvasW + "' height='" + DOT.constants.canvasH + "' >\n";
-	
-	//print out the background
-	if(document.getElementById('exp_bg').checked === true) {
-		newtext += "<rect x='0' y='0' width='" + DOT.constants.canvasW + "' height='" + DOT.constants.canvasH + "' fill='" + document.getElementById('bg_rect').getAttributeNS(null,'fill') + "' />\n";
-	}
+    var tarea = document.getElementById('export_ta');
+    tarea.style.visibility = 'visible';
+    tarea.style.display = 'block';
+    var newtext, shp;
 
-	//if the checkbox is checked add zone shapes as well
-	if(document.getElementById('exp_zones').checked === true) {
-		//some CSS styling
-		tarea.innerHTML += "<style type='text/css'>\n/*start CSS*/\n#z1, #z2, #z3 {stroke: none;}\n#z1 {fill: #d99;}\n#z2 {fill: #ff5;}\n#z3 {fill: #339;}\n/* end CSS */\n</style>\n";
-		newtext += "<g id='zones'>\n";
+    newtext = "<svg xmlns='http://www.w3.org/2000/svg' width='" + DOT.constants.canvasW + "' height='" + DOT.constants.canvasH + "' >\n";
 
-		//SVG for shapes
-		var i;
-		//for each zone
-		for( i = 1; i < 4; i++ ) {
-			newtext += "<g id='z" + i + "'>\n";
-			//for each object in the zone
-			for(count in DOT.data.shapes) {
-				shp = DOT.data.shapes[count];
-				//rect or circle?
-				if(shp.z === 'z' + i) {
-					if(shp.type === 'r') {
-						//rect
-						newtext += "<rect x='" + shp.x + "' y='" + shp.y + "' width='" + shp.w + "' height='" + shp.h + "' />\n";
-					} else {
-						//circle
-						newtext += "<circle cx='" + shp.x + "' cy='" + shp.y + "' r='" + shp.r + "' />\n";
-					}
-				}
-			}
-			newtext += "</g>\n";
-		}
-		newtext += "</g>\n";
-	}// end of optional zone shapes output
+    //print out the background
+    if(document.getElementById('exp_bg').checked === true) {
+        newtext += "<rect x='0' y='0' width='" + DOT.constants.canvasW + "' height='" + DOT.constants.canvasH + "' fill='" + document.getElementById('bg_rect').getAttributeNS(null,'fill') + "' />\n";
+    }
 
-	newtext += "<g id='dots'>\n";
+    //if the checkbox is checked add zone shapes as well
+    if(document.getElementById('exp_zones').checked === true) {
+        //some CSS styling
+        tarea.innerHTML += "<style type='text/css'>\n/*start CSS*/\n#z1, #z2, #z3 {stroke: none;}\n#z1 {fill: #d99;}\n#z2 {fill: #ff5;}\n#z3 {fill: #339;}\n/* end CSS */\n</style>\n";
+        newtext += "<g id='zones'>\n";
 
-	//for each dot
-	for(count in DOT.data.circles) {
-		shp = DOT.data.circles[count];
-		//circle
-		newtext += "<circle cx='" + shp.cx + "' cy='" + shp.cy + "' r='" + shp.cr + "' fill='" + shp.f + "' />\n";
-	}
-	newtext += "</g>\n";
+        //SVG for shapes
+        var i;
+        //for each zone
+        for( i = 1; i < 4; i++ ) {
+            newtext += "<g id='z" + i + "'>\n";
+            //for each object in the zone
+            for(count in DOT.data.shapes) {
+                shp = DOT.data.shapes[count];
+                //rect or circle?
+                if(shp.z === 'z' + i) {
+                    if(shp.type === 'r') {
+                        //rect
+                        newtext += "<rect x='" + shp.x + "' y='" + shp.y + "' width='" + shp.w + "' height='" + shp.h + "' />\n";
+                    } else {
+                        //circle
+                        newtext += "<circle cx='" + shp.x + "' cy='" + shp.y + "' r='" + shp.r + "' />\n";
+                    }
+                }
+            }
+            newtext += "</g>\n";
+        }
+        newtext += "</g>\n";
+    }// end of optional zone shapes output
 
-	newtext += "</svg>";
+    newtext += "<g id='dots'>\n";
 
-	//add svg text to textarea
-	tarea.value = newtext;
+    //for each dot
+    for(count in DOT.data.circles) {
+        shp = DOT.data.circles[count];
+        //circle
+        newtext += "<circle cx='" + shp.cx + "' cy='" + shp.cy + "' r='" + shp.cr + "' fill='" + shp.f + "' />\n";
+    }
+    newtext += "</g>\n";
 
-	//add the newtext to a new window
-	//var expWindow = window.open('','exp_window');
-	//expWindow.document.open ('content-type: text/xml');
-	//expWindow.focus();
-	//expWindow.write(newtext);
-	//expWindow.document.close();
+    newtext += "</svg>";
+
+    //add svg text to textarea
+    tarea.value = newtext;
+
+    //add the newtext to a new window
+    //var expWindow = window.open('','exp_window');
+    //expWindow.document.open ('content-type: text/xml');
+    //expWindow.focus();
+    //expWindow.write(newtext);
+    //expWindow.document.close();
 };
 
 //on page load assign event listeners to objects
 window.onload = function() {
-	//get the canvas x,y corners and width/height
-	getCanvasProperties();
+    //get the canvas x,y corners and width/height
+    DOT.getCanvasProperties();
 
-	//get input defaults
-	getFormDefaults();
+    //get input defaults
+    getFormDefaults();
 
-	//add event listeners to SVG objects and input elements
-	DOT.setEventListeners();
+    //add event listeners to SVG objects and input elements
+    DOT.setEventListeners();
 
-	//add existing SVG shapes to dataset for editing and automated DOT
-	getZoneShapes();
+    //add existing SVG shapes to dataset for editing and automated DOT
+    getZoneShapes();
 
-	//add Existing SVG zone shapes to form
-	setShapeForm();
+    //add Existing SVG zone shapes to form
+    setShapeForm();
 };
